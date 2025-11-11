@@ -47,10 +47,16 @@ class ClientExecutor:
             func = obj if callable(obj) else getattr(obj, path.split(".")[-1].rstrip("()"))
         else:
             func = eval(path, self.globals)
+
         # Resolve proxy references in args and kwargs
         resolved_args = self._resolve_proxies(args)
         resolved_kwargs = self._resolve_proxies(kwargs)
-        return {"type": "success", "obj_id": self._store_object(func(*resolved_args, **resolved_kwargs))}
+
+        # Call the function and get result
+        result = func(*resolved_args, **resolved_kwargs)
+
+        # Store and return
+        return {"type": "success", "obj_id": self._store_object(result)}
 
     def _getitem(self, obj_id: int, key: Any) -> dict:
         """Get item from object and return object ID."""
@@ -67,14 +73,24 @@ class ClientExecutor:
 
     def _resolve_proxies(self, obj: Any) -> Any:
         """Resolve proxy references and slices to actual objects."""
+        # Import here to avoid circular dependency
+        from simplerpc.client.proxy import RPCProxy
+
         if isinstance(obj, dict):
             if obj.get("__rpc_proxy__"):
-                return self.objects[obj["obj_id"]]
+                resolved = self.objects[obj["obj_id"]]
+                # Ensure we're not returning a proxy object
+                if isinstance(resolved, RPCProxy):
+                    raise ValueError(f"Server object store contains RPCProxy at id {obj['obj_id']}")
+                return resolved
             elif obj.get("__slice__"):
                 return slice(obj["start"], obj["stop"], obj["step"])
             return {k: self._resolve_proxies(v) for k, v in obj.items()}
         elif isinstance(obj, (list, tuple)):
             return type(obj)(self._resolve_proxies(item) for item in obj)
+        # If we somehow got a proxy object directly, raise an error
+        elif isinstance(obj, RPCProxy):
+            raise ValueError("RPCProxy object found in server-side data")
         return obj
 
     def _store_object(self, obj: Any) -> int:

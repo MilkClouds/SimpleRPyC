@@ -15,6 +15,13 @@ class RPCProxy:
 
     def __getattr__(self, name: str):
         """Attribute access returns new proxy with server-side object."""
+        # Handle special attributes locally to avoid unnecessary RPC calls
+        # These are commonly accessed by Python internals and libraries for introspection
+        if name in ("__spec__", "__path__", "__file__", "__loader__", "__package__"):
+            # Return None for module-related special attributes
+            # This prevents unnecessary RPC calls during module introspection
+            raise AttributeError(f"'{self._rpc_path}' has no attribute '{name}'")
+
         new_path = f"{self._rpc_path}.{name}" if self._rpc_path else name
         response = self._rpc_connection.send(
             {"type": "getattr", "path": self._rpc_path, "obj_id": self._rpc_obj_id, "attr": name}
