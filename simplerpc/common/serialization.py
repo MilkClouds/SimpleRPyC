@@ -1,4 +1,5 @@
 """Serialization using msgpack with numpy support."""
+
 import msgpack
 import msgpack_numpy as m
 
@@ -13,5 +14,4 @@ def serialize(obj) -> bytes:
 
 def deserialize(data: bytes):
     """Deserialize msgpack bytes to object."""
-    return msgpack.unpackb(data, raw=False)
-
+    return msgpack.unpackb(data, raw=False, strict_map_key=False)
