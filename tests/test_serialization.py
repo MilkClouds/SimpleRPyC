@@ -1,6 +1,5 @@
 """Tests for simplerpc.common.serialization module."""
 
-import pytest
 import numpy as np
 
 from simplerpc.common.serialization import serialize, deserialize
@@ -14,7 +13,7 @@ class TestSerialization:
         original = "test string"
         serialized = serialize(original)
         deserialized = deserialize(serialized)
-        
+
         assert deserialized == original
         assert isinstance(serialized, bytes)
 
@@ -23,7 +22,7 @@ class TestSerialization:
         original = 42
         serialized = serialize(original)
         deserialized = deserialize(serialized)
-        
+
         assert deserialized == original
 
     def test_serialize_deserialize_float(self):
@@ -31,7 +30,7 @@ class TestSerialization:
         original = 3.14159
         serialized = serialize(original)
         deserialized = deserialize(serialized)
-        
+
         assert deserialized == original
 
     def test_serialize_deserialize_list(self):
@@ -39,21 +38,15 @@ class TestSerialization:
         original = [1, 2, 3, "four", 5.0]
         serialized = serialize(original)
         deserialized = deserialize(serialized)
-        
+
         assert deserialized == original
 
     def test_serialize_deserialize_dict(self):
         """Test serializing and deserializing dicts."""
-        original = {
-            "string": "value",
-            "number": 42,
-            "float": 3.14,
-            "list": [1, 2, 3],
-            "nested": {"key": "value"}
-        }
+        original = {"string": "value", "number": 42, "float": 3.14, "list": [1, 2, 3], "nested": {"key": "value"}}
         serialized = serialize(original)
         deserialized = deserialize(serialized)
-        
+
         assert deserialized == original
 
     def test_serialize_deserialize_none(self):
@@ -61,7 +54,7 @@ class TestSerialization:
         original = None
         serialized = serialize(original)
         deserialized = deserialize(serialized)
-        
+
         assert deserialized is None
 
     def test_serialize_deserialize_bool(self):
@@ -76,7 +69,7 @@ class TestSerialization:
         original = (1, 2, 3, "four")
         serialized = serialize(original)
         deserialized = deserialize(serialized)
-        
+
         # msgpack converts tuples to lists
         assert deserialized == list(original)
 
@@ -85,7 +78,7 @@ class TestSerialization:
         original = np.array([1, 2, 3, 4, 5])
         serialized = serialize(original)
         deserialized = deserialize(serialized)
-        
+
         assert np.array_equal(deserialized, original)
 
     def test_serialize_deserialize_numpy_2d_array(self):
@@ -93,7 +86,7 @@ class TestSerialization:
         original = np.array([[1, 2, 3], [4, 5, 6]])
         serialized = serialize(original)
         deserialized = deserialize(serialized)
-        
+
         assert np.array_equal(deserialized, original)
 
     def test_serialize_deserialize_numpy_float_array(self):
@@ -101,29 +94,22 @@ class TestSerialization:
         original = np.array([1.1, 2.2, 3.3, 4.4])
         serialized = serialize(original)
         deserialized = deserialize(serialized)
-        
+
         assert np.allclose(deserialized, original)
 
     def test_serialize_deserialize_complex_structure(self):
         """Test serializing complex nested structures."""
         original = {
             "data": [1, 2, 3],
-            "metadata": {
-                "name": "test",
-                "version": 1,
-                "array": np.array([10, 20, 30])
-            },
-            "flags": [True, False, True]
+            "metadata": {"name": "test", "version": 1, "array": np.array([10, 20, 30])},
+            "flags": [True, False, True],
         }
         serialized = serialize(original)
         deserialized = deserialize(serialized)
-        
+
         assert deserialized["data"] == original["data"]
         assert deserialized["metadata"]["name"] == original["metadata"]["name"]
-        assert np.array_equal(
-            deserialized["metadata"]["array"],
-            original["metadata"]["array"]
-        )
+        assert np.array_equal(deserialized["metadata"]["array"], original["metadata"]["array"])
 
     def test_serialize_bytes(self):
         """Test that serialize returns bytes."""
@@ -148,10 +134,9 @@ class TestSerialization:
             False,
             None,
         ]
-        
+
         for original in test_cases:
             serialized = serialize(original)
             deserialized = deserialize(serialized)
             assert deserialized == original
             assert type(deserialized) == type(original)
-

@@ -323,7 +323,6 @@ class TestNumpyIntegration:
 
     def test_numpy_proxy_as_argument(self, numpy_server):
         """Test passing RPCProxy as argument to numpy functions."""
-        import numpy as np_local
 
         connect("localhost", numpy_server.port, token=numpy_server.token)
         patch_module("numpy")
@@ -338,7 +337,6 @@ class TestNumpyIntegration:
 
     def test_numpy_multiple_proxy_arguments(self, numpy_server):
         """Test passing multiple RPCProxy objects as arguments."""
-        import numpy as np_local
 
         connect("localhost", numpy_server.port, token=numpy_server.token)
         patch_module("numpy")

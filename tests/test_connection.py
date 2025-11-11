@@ -1,13 +1,12 @@
 """Tests for simplerpc.client.connection module."""
 
-import asyncio
 import os
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from simplerpc.client.connection import Connection, connect, disconnect, get_connection
-from simplerpc.common.serialization import deserialize, serialize
+from simplerpc.common.serialization import serialize
 
 
 class TestConnection:
