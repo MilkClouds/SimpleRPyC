@@ -49,7 +49,7 @@ jobs:
 
     - name: Run tests
       run: |
-        uv run pytest --cov=lazyregistry --cov-report=xml --cov-report=term
+        uv run pytest --cov=simplerpc --cov-report=xml --cov-report=term
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
