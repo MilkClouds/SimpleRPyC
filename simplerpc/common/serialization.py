@@ -1,10 +1,13 @@
 """Serialization using msgpack with numpy support and dill for exceptions."""
 
+import logging
 import traceback
 
 import dill
 import msgpack
 import msgpack_numpy as m
+
+logger = logging.getLogger(__name__)
 
 # Patch msgpack to support numpy arrays
 m.patch()
@@ -41,7 +44,8 @@ def serialize_exception(exc: Exception) -> dict:
     """Serialize exception with dill."""
     try:
         exception_pickle = dill.dumps(exc)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Failed to serialize exception with dill: {e!r}. Falling back to basic exception info.")
         exception_pickle = None
 
     return {
@@ -66,7 +70,9 @@ def deserialize_exception(exc_data: dict) -> tuple[Exception, Exception | None]:
         try:
             original_exc = dill.loads(exc_data["exception_pickle"])
             return (remote_exc, original_exc)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(
+                f"Failed to deserialize exception with dill: {e!r}. RemoteException will be raised without a cause."
+            )
 
     return (remote_exc, None)
