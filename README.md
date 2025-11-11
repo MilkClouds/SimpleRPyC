@@ -1,15 +1,17 @@
-# SimpleRPC
+# SimpleRPyC
 
 [![CI](https://github.com/milkclouds/simplerpc/actions/workflows/ci.yml/badge.svg)](https://github.com/milkclouds/simplerpc/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/milkclouds/simplerpc/branch/main/graph/badge.svg)](https://codecov.io/gh/milkclouds/simplerpc)
-[![pypi](https://img.shields.io/pypi/v/simplerpc.svg)](https://pypi.python.org/pypi/simplerpc)
-[![Python Versions](https://img.shields.io/pypi/pyversions/simplerpc.svg)](https://pypi.org/project/simplerpc/)
+[![pypi](https://img.shields.io/pypi/v/simplerpyc.svg)](https://pypi.python.org/pypi/simplerpyc)
+[![Python Versions](https://img.shields.io/pypi/pyversions/simplerpyc.svg)](https://pypi.org/project/simplerpyc/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
-WebSocket-based RPC with transparent proxy objects and numpy cross-version compatibility.
+SimpleRPyC (pronounced *simple-are-pie-see*), short for **Simple Remote Python Call**, is a WebSocket-based RPC library for Python. Inspired by [RPyC](https://github.com/tomerfiliba-org/rpyc), it uses transparent [proxy objects](https://en.wikipedia.org/wiki/Proxy_pattern) to let you interact with remote Python objects as if they were local—leveraging Python's dynamic nature to bridge processes and machines seamlessly. Additionally, SimpleRPyC provides convenient module patching that allows you to use existing code with minimal changes.
 
-## Why SimpleRPC?
+Unlike traditional RPC libraries that use custom protocols, SimpleRPyC is built on **WebSocket** (standard, debuggable protocol) and **[msgpack](https://msgpack.org/)** (efficient binary serialization). This choice enables seamless numpy array transfers between different numpy versions (1.x ↔ 2.x), which is critical for running modern ML code alongside legacy environments.
+
+## Why SimpleRPyC?
 
 **Problem**: Running code with incompatible dependencies in the same process.
 
@@ -19,7 +21,7 @@ For example, robotics simulation environments like [SimplerEnv](https://github.c
 
 ## Why Not Alternatives?
 
-| Feature | SimpleRPC | [RPyC](https://github.com/tomerfiliba-org/rpyc) | [Pyro5](https://github.com/irmen/Pyro5) | [zero](https://github.com/Ananto30/zero) |
+| Feature | SimpleRPyC | [RPyC](https://github.com/tomerfiliba-org/rpyc) | [Pyro5](https://github.com/irmen/Pyro5) | [zero](https://github.com/Ananto30/zero) |
 |---------|-----------|------|-------|------|
 | Transport | WebSocket | TCP + custom protocol | TCP + custom protocol | ZMQ |
 | Serialization | [msgpack](https://msgpack.org/) | brine (custom) | [serpent](https://github.com/irmen/Serpent) | [msgspec](https://jcristharif.com/msgspec/) |
@@ -50,19 +52,19 @@ For example, robotics simulation environments like [SimplerEnv](https://github.c
 
 ## ⚠️ Security Warning
 
-**SimpleRPC uses unencrypted WebSocket connections (`ws://`).** The authentication token and all data are transmitted in plaintext, making them vulnerable to network sniffing and man-in-the-middle attacks.
+**SimpleRPyC uses unencrypted WebSocket connections (`ws://`).** The authentication token and all data are transmitted in plaintext, making them vulnerable to network sniffing and man-in-the-middle attacks.
 
-**Use SimpleRPC only in trusted, private networks** (e.g., localhost, private LANs, VPNs). **DO NOT expose SimpleRPC servers to the public internet** or use it over untrusted networks.
+**Use SimpleRPyC only in trusted, private networks** (e.g., localhost, private LANs, VPNs). **DO NOT expose SimpleRPyC servers to the public internet** or use it over untrusted networks.
 
 For production use over untrusted networks, consider:
-- Running SimpleRPC only on `localhost` and using SSH tunneling for remote access
+- Running SimpleRPyC only on `localhost` and using SSH tunneling for remote access
 - Deploying within a private network or VPN
 - Adding TLS/SSL encryption layer (e.g., reverse proxy with nginx/caddy)
 
 ## Installation
 
 ```bash
-pip install simplerpc
+pip install simplerpyc
 ```
 
 ## Quick Start
@@ -80,7 +82,7 @@ export SIMPLERPC_TOKEN='<TOKEN_FROM_SERVER>'
 
 ### 2. Use the Client
 
-SimpleRPC provides two API styles - choose what fits your use case:
+SimpleRPyC provides two API styles - choose what fits your use case:
 
 #### Style 1: Module Patching (Import-like)
 
