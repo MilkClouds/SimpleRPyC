@@ -15,9 +15,9 @@ simplerpc.patch_module("sys")
 simplerpc.patch_module("json")
 
 # Now we can import and use them as if they were local
-import json as remote_json
-import os as remote_os
-import sys as remote_sys
+import json as remote_json  # noqa: E402
+import os as remote_os  # noqa: E402
+import sys as remote_sys  # noqa: E402
 
 print("=== SimpleRPC Example ===\n")
 
