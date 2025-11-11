@@ -1,7 +1,5 @@
 """Tests for simplerpc.client.proxy module."""
 
-from unittest.mock import patch
-
 import pytest
 
 from simplerpc.client.proxy import RemoteException, RPCProxy, is_proxy, materialize

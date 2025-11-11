@@ -3,8 +3,6 @@
 import sys
 from unittest.mock import MagicMock
 
-import pytest
-
 
 class TestPatchModule:
     """Test patch_module function (deprecated - use conn.patch_module instead)."""
