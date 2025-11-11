@@ -2,10 +2,47 @@
 
 import asyncio
 import os
+import sys
 
 import websockets
 
 from simplerpc.common.serialization import deserialize, serialize
+
+
+class _ModulesNamespace:
+    """Namespace for accessing remote modules."""
+
+    def __init__(self, conn):
+        object.__setattr__(self, "_conn", conn)
+
+    def __getattr__(self, name: str):
+        """Get remote module by attribute access."""
+        from simplerpc.client.proxy import RPCProxy, _raise_deserialized_error
+
+        response = self._conn.send({"type": "import_module", "module": name})
+        if response["type"] == "error":
+            _raise_deserialized_error(response)
+        return RPCProxy(path=name, obj_id=response["obj_id"], connection=self._conn)
+
+    def __getitem__(self, name: str):
+        """Get remote module by bracket notation (for nested imports)."""
+        return self.__getattr__(name)
+
+
+class _BuiltinsNamespace:
+    """Namespace for accessing remote builtins."""
+
+    def __init__(self, conn):
+        object.__setattr__(self, "_conn", conn)
+
+    def __getattr__(self, name: str):
+        """Get remote builtin by attribute access."""
+        from simplerpc.client.proxy import RPCProxy, _raise_deserialized_error
+
+        response = self._conn.send({"type": "get_builtin", "name": name})
+        if response["type"] == "error":
+            _raise_deserialized_error(response)
+        return RPCProxy(path=f"builtins.{name}", obj_id=response["obj_id"], connection=self._conn)
 
 
 class Connection:
@@ -14,6 +51,8 @@ class Connection:
     def __init__(self):
         self.ws = None
         self.loop = None
+        self.modules = _ModulesNamespace(self)
+        self.builtins = _BuiltinsNamespace(self)
 
     def connect(self, host: str, port: int, token: str | None = None):
         """Connect to RPC server."""
@@ -32,6 +71,57 @@ class Connection:
             self.ws = await websockets.connect(f"ws://{host}:{port}?token={token}")
 
         self.loop.run_until_complete(_connect())
+
+    @property
+    def namespace(self) -> dict:
+        """Get remote namespace (globals)."""
+        from simplerpc.client.proxy import _raise_deserialized_error
+
+        response = self.send({"type": "get_namespace"})
+        if response["type"] == "error":
+            _raise_deserialized_error(response)
+        return response["namespace"]
+
+    def eval(self, expr: str):
+        """Evaluate expression on remote."""
+        from simplerpc.client.proxy import RPCProxy, _raise_deserialized_error
+
+        response = self.send({"type": "eval", "expr": expr})
+        if response["type"] == "error":
+            _raise_deserialized_error(response)
+        return RPCProxy(path=f"eval({expr!r})", obj_id=response["obj_id"], connection=self)
+
+    def execute(self, code: str):
+        """Execute code on remote."""
+        from simplerpc.client.proxy import _raise_deserialized_error
+
+        response = self.send({"type": "execute", "code": code})
+        if response["type"] == "error":
+            _raise_deserialized_error(response)
+
+    def teleport(self, func):
+        """Send function to remote and return proxy."""
+        import dill
+
+        from simplerpc.client.proxy import RPCProxy, _raise_deserialized_error
+
+        func_bytes = dill.dumps(func)
+        response = self.send({"type": "teleport", "func_bytes": func_bytes, "name": func.__name__})
+        if response["type"] == "error":
+            _raise_deserialized_error(response)
+        return RPCProxy(path=func.__name__, obj_id=response["obj_id"], connection=self)
+
+    def patch_module(self, module_name: str):
+        """Import remote module and patch sys.modules."""
+        from simplerpc.client.proxy import RPCProxy, _raise_deserialized_error
+
+        response = self.send({"type": "import_module", "module": module_name})
+        if response["type"] == "error":
+            _raise_deserialized_error(response)
+
+        proxy = RPCProxy(path=module_name, obj_id=response["obj_id"], connection=self)
+        sys.modules[module_name] = proxy  # type: ignore
+        return proxy
 
     def send(self, message: dict) -> dict:
         """Send message synchronously."""
@@ -52,26 +142,8 @@ class Connection:
             self.loop.run_until_complete(_disconnect())
 
 
-# Global connection instance
-_connection = None
-
-
-def get_connection() -> Connection:
-    """Get global connection instance."""
-    global _connection
-    if _connection is None:
-        _connection = Connection()
-    return _connection
-
-
-def connect(host: str = "localhost", port: int = 8000, token: str | None = None):
-    """Connect to RPC server."""
-    get_connection().connect(host, port, token)
-
-
-def disconnect():
-    """Disconnect from RPC server."""
-    global _connection
-    if _connection:
-        _connection.disconnect()
-        _connection = None
+def connect(host: str = "localhost", port: int = 8000, token: str | None = None) -> Connection:
+    """Connect to RPC server and return connection object."""
+    conn = Connection()
+    conn.connect(host, port, token)
+    return conn

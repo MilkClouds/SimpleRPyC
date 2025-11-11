@@ -2,8 +2,6 @@
 
 from typing import Any
 
-from simplerpc.client.connection import get_connection
-
 
 def _raise_deserialized_error(response: dict):
     """Deserialize and raise error."""
@@ -18,18 +16,14 @@ def _raise_deserialized_error(response: dict):
 class RPCProxy:
     """Proxy for remote objects. All operations are lazy until materialized."""
 
-    def __init__(self, path: str = "", obj_id: int | None = None):
+    def __init__(self, path: str = "", obj_id: int | None = None, connection=None):
         object.__setattr__(self, "_rpc_path", path)
         object.__setattr__(self, "_rpc_obj_id", obj_id)
-        object.__setattr__(self, "_rpc_connection", get_connection())
+        object.__setattr__(self, "_rpc_connection", connection)
 
     def __getattr__(self, name: str):
         """Attribute access returns new proxy with server-side object."""
-        # Handle special attributes locally to avoid unnecessary RPC calls
-        # These are commonly accessed by Python internals and libraries for introspection
         if name in ("__spec__", "__path__", "__file__", "__loader__", "__package__"):
-            # Return None for module-related special attributes
-            # This prevents unnecessary RPC calls during module introspection
             raise AttributeError(f"'{self._rpc_path}' has no attribute '{name}'")
 
         new_path = f"{self._rpc_path}.{name}" if self._rpc_path else name
@@ -38,7 +32,7 @@ class RPCProxy:
         )
         if response["type"] == "error":
             _raise_deserialized_error(response)
-        return RPCProxy(path=new_path, obj_id=response["obj_id"])
+        return RPCProxy(path=new_path, obj_id=response["obj_id"], connection=self._rpc_connection)
 
     def __call__(self, *args, **kwargs):
         """Function/method call returns new proxy with result."""
@@ -47,14 +41,14 @@ class RPCProxy:
         )
         if response["type"] == "error":
             _raise_deserialized_error(response)
-        return RPCProxy(path=f"{self._rpc_path}()", obj_id=response["obj_id"])
+        return RPCProxy(path=f"{self._rpc_path}()", obj_id=response["obj_id"], connection=self._rpc_connection)
 
     def __getitem__(self, key):
         """Indexing returns new proxy."""
         response = self._rpc_connection.send({"type": "getitem", "obj_id": self._rpc_obj_id, "key": key})
         if response["type"] == "error":
             _raise_deserialized_error(response)
-        return RPCProxy(path=f"{self._rpc_path}[{key}]", obj_id=response["obj_id"])
+        return RPCProxy(path=f"{self._rpc_path}[{key}]", obj_id=response["obj_id"], connection=self._rpc_connection)
 
     def __repr__(self):
         """Debug representation."""

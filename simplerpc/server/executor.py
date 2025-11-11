@@ -20,6 +20,11 @@ class ClientExecutor:
                 "call": lambda: self._call(msg["path"], msg.get("obj_id"), msg["args"], msg["kwargs"]),
                 "getitem": lambda: self._getitem(msg["obj_id"], msg["key"]),
                 "materialize": lambda: self._materialize(msg["obj_id"]),
+                "get_namespace": lambda: self._get_namespace(),
+                "get_builtin": lambda: self._get_builtin(msg["name"]),
+                "eval": lambda: self._eval(msg["expr"]),
+                "execute": lambda: self._execute(msg["code"]),
+                "teleport": lambda: self._teleport(msg["func_bytes"], msg["name"]),
             }
             handler = handlers.get(msg["type"])
             if handler:
@@ -100,3 +105,32 @@ class ClientExecutor:
         self.next_obj_id += 1
         self.objects[obj_id] = obj
         return obj_id
+
+    def _get_namespace(self) -> dict:
+        """Return namespace keys (not values, to avoid serialization issues)."""
+        return {"type": "success", "namespace": {k: str(type(v)) for k, v in self.globals.items()}}
+
+    def _get_builtin(self, name: str) -> dict:
+        """Get builtin function/class by name."""
+        import builtins
+
+        obj = getattr(builtins, name)
+        return {"type": "success", "obj_id": self._store_object(obj)}
+
+    def _eval(self, expr: str) -> dict:
+        """Evaluate expression and return object ID."""
+        result = eval(expr, self.globals)
+        return {"type": "success", "obj_id": self._store_object(result)}
+
+    def _execute(self, code: str) -> dict:
+        """Execute code in namespace."""
+        exec(code, self.globals)
+        return {"type": "success"}
+
+    def _teleport(self, func_bytes: bytes, name: str) -> dict:
+        """Deserialize function, add to namespace, and return object ID."""
+        import dill
+
+        func = dill.loads(func_bytes)
+        self.globals[name] = func
+        return {"type": "success", "obj_id": self._store_object(func)}

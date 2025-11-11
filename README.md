@@ -1,5 +1,12 @@
 # SimpleRPC
 
+[![CI](https://github.com/milkclouds/simplerpc/actions/workflows/ci.yml/badge.svg)](https://github.com/milkclouds/simplerpc/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/milkclouds/simplerpc/branch/main/graph/badge.svg)](https://codecov.io/gh/milkclouds/simplerpc)
+[![pypi](https://img.shields.io/pypi/v/simplerpc.svg)](https://pypi.python.org/pypi/simplerpc)
+[![Python Versions](https://img.shields.io/pypi/pyversions/simplerpc.svg)](https://pypi.org/project/simplerpc/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+
 Simple Remote Procedure Call over WebSocket with lazy evaluation and explicit materialization.
 
 - **Where is it used?**: I wrote this library to separate RL environment execution from RL policy. e.g. [SimplerEnv](https://github.com/simpler-env/SimplerEnv) requires `numpy<2.0` but common RL policies nowaday requires `numpy>=2.0`. This library allows us to run environment in separate process with `numpy<2.0` while keeping policy in main process with `numpy>=2.0`.
@@ -14,12 +21,13 @@ Simple Remote Procedure Call over WebSocket with lazy evaluation and explicit ma
 - **Explicit Materialization**: User controls when to fetch data from server
 - **Token Authentication**: Secure connection with random tokens
 - **msgpack Serialization**: Efficient binary serialization with numpy support
-- **Module Patching**: Use remote modules as if they were local
+- **Flexible API**: Module patching for import-style usage, or namespace access for explicit remote calls
+- **Advanced Features**: Remote code execution (`eval`, `execute`), function teleportation
 
 ## Installation
 
 ```bash
-uv sync
+pip install simplerpc
 ```
 
 ## Quick Start
@@ -37,30 +45,48 @@ export SIMPLERPC_TOKEN='<TOKEN_FROM_SERVER>'
 
 ### 2. Use the Client
 
+SimpleRPC provides two API styles - choose what fits your use case:
+
+#### Style 1: Module Patching (Import-like)
+
 ```python
 import simplerpc
 from simplerpc import materialize
 
-# Connect to server (token auto-detected from SIMPLERPC_TOKEN env var)
-# Or pass explicitly: simplerpc.connect("localhost", 8000, token="...")
-simplerpc.connect("localhost", 8000)
+# Connect to server
+conn = simplerpc.connect("localhost", 8000)
 
-# Patch a module (client doesn't need it installed)
-simplerpc.patch_module("os")
+# Patch modules to use remote versions
+simplerpc.patch_module(conn, "os")
+simplerpc.patch_module(conn, "numpy")
 
-# Import and use as normal
-import os as remote_os
+# Import and use as if they were local
+import os
+import numpy as np
+
+cwd = materialize(os.getcwd())
+arr = materialize(np.array([1, 2, 3]))
+
+conn.disconnect()
+```
+
+#### Style 2: Explicit Remote Access
+
+```python
+from simplerpc import connect, materialize
+
+# Connect to server
+conn = connect("localhost", 8000)
+
+# Access remote modules explicitly
+remote_os = conn.modules.os
+remote_np = conn.modules.numpy
 
 # Everything returns proxies by default
-cwd_proxy = remote_os.getcwd()
-print(simplerpc.is_proxy(cwd_proxy))  # True
+cwd = materialize(remote_os.getcwd())
+arr = materialize(remote_np.array([1, 2, 3]))
 
-# Explicitly materialize when you need the actual value
-cwd = materialize(cwd_proxy)
-print(cwd)  # Actual string value
-
-# Disconnect
-simplerpc.disconnect()
+conn.disconnect()
 ```
 
 ## Core Concepts
@@ -89,27 +115,84 @@ reward = materialize(result[1]) # only reward
 
 ## API Reference
 
-### Client Functions
+### Connection
 
-- `connect(host, port, token)` - Connect to RPC server
-- `disconnect()` - Disconnect from server
-- `patch_module(module_name)` - Patch a module with RPC proxy
-- `materialize(obj)` - Convert proxy to actual value
-- `is_proxy(obj)` - Check if object is a proxy
+```python
+from simplerpc import connect
 
-### Environment Variables
+conn = connect(host="localhost", port=8000, token=None)
+# Token auto-detected from SIMPLERPC_TOKEN env var if not provided
+```
 
-- `SIMPLERPC_TOKEN` - Authentication token (auto-detected by `connect()` if not provided)
+### Basic API
 
-### Server
+**Module Patching:**
+```python
+import simplerpc
+
+simplerpc.patch_module(conn, "os")      # Patch sys.modules
+import os                                # Now uses remote version
+```
+
+**Namespace Access:**
+```python
+remote_os = conn.modules.os             # Access remote module
+remote_len = conn.builtins.len          # Access remote builtin
+```
+
+**Utility Functions:**
+```python
+from simplerpc import materialize, is_proxy
+
+value = materialize(proxy)              # Convert proxy to actual value
+is_remote = is_proxy(obj)               # Check if object is a proxy
+```
+
+### Advanced Features
+
+**Remote Code Execution:**
+```python
+# Evaluate expression
+result = materialize(conn.eval("2 + 3"))  # 5
+
+# Execute code (no return value)
+conn.execute("x = 42")
+x = materialize(conn.eval("x"))           # 42
+```
+
+**Function Teleportation:**
+```python
+# Send local function to remote
+def square(x):
+    return x ** 2
+
+remote_square = conn.teleport(square)
+result = materialize(remote_square(5))    # 25
+```
+
+**Connection Management:**
+```python
+conn.disconnect()                         # Close connection
+```
+
+## Server
 
 ```bash
 python -m simplerpc.server [--host HOST] [--port PORT]
 ```
 
+The server will print a token. Set it as environment variable:
+```bash
+export SIMPLERPC_TOKEN='<TOKEN_FROM_SERVER>'
+```
+
 ## Examples
 
 See `example_client.py` for comprehensive examples.
+
+## Design Notes
+
+SimpleRPC draws inspiration from [RPyC](https://github.com/tomerfiliba-org/rpyc)'s elegant design patterns while focusing on WebSocket transport and numpy compatibility. We adopt proven patterns from established RPC libraries and adapt them for modern use cases.
 
 ## Architecture
 

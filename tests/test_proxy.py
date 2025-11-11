@@ -12,33 +12,28 @@ class TestRPCProxy:
 
     def test_init(self, mock_connection):
         """Test RPCProxy initialization."""
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy(path="test.module", obj_id=42)
-            assert proxy._rpc_path == "test.module"
-            assert proxy._rpc_obj_id == 42
-            assert proxy._rpc_connection == mock_connection
+        proxy = RPCProxy(path="test.module", obj_id=42, connection=mock_connection)
+        assert proxy._rpc_path == "test.module"
+        assert proxy._rpc_obj_id == 42
+        assert proxy._rpc_connection == mock_connection
 
     def test_init_defaults(self, mock_connection):
         """Test RPCProxy initialization with defaults."""
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy()
-            assert proxy._rpc_path == ""
-            assert proxy._rpc_obj_id is None
+        proxy = RPCProxy(connection=mock_connection)
+        assert proxy._rpc_path == ""
+        assert proxy._rpc_obj_id is None
 
     def test_getattr_success(self, mock_connection):
         """Test attribute access returns new proxy."""
         mock_connection.send.return_value = {"type": "success", "obj_id": 2}
-
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy(path="module", obj_id=1)
-            result = proxy.attr_name
-
-            assert isinstance(result, RPCProxy)
-            assert result._rpc_path == "module.attr_name"
-            assert result._rpc_obj_id == 2
-            mock_connection.send.assert_called_once_with(
-                {"type": "getattr", "path": "module", "obj_id": 1, "attr": "attr_name"}
-            )
+        proxy = RPCProxy(path="module", obj_id=1, connection=mock_connection)
+        result = proxy.attr_name
+        assert isinstance(result, RPCProxy)
+        assert result._rpc_path == "module.attr_name"
+        assert result._rpc_obj_id == 2
+        mock_connection.send.assert_called_once_with(
+            {"type": "getattr", "path": "module", "obj_id": 1, "attr": "attr_name"}
+        )
 
     def test_getattr_error(self, mock_connection):
         """Test attribute access with error response."""
@@ -49,30 +44,23 @@ class TestRPCProxy:
             "exception_pickle": None,
             "traceback": "Traceback...",
         }
-
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy(path="module", obj_id=1)
-
-            with pytest.raises(RemoteException) as exc_info:
-                _ = proxy.missing_attr
-
-            assert "AttributeError" in str(exc_info.value)
-            assert exc_info.value.remote_traceback == "Traceback..."
+        proxy = RPCProxy(path="module", obj_id=1, connection=mock_connection)
+        with pytest.raises(RemoteException) as exc_info:
+            _ = proxy.missing_attr
+        assert "AttributeError" in str(exc_info.value)
+        assert exc_info.value.remote_traceback == "Traceback..."
 
     def test_call_success(self, mock_connection):
         """Test calling proxy returns new proxy."""
         mock_connection.send.return_value = {"type": "success", "obj_id": 3}
-
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy(path="module.func", obj_id=2)
-            result = proxy(1, 2, key="value")
-
-            assert isinstance(result, RPCProxy)
-            assert result._rpc_path == "module.func()"
-            assert result._rpc_obj_id == 3
-            mock_connection.send.assert_called_once_with(
-                {"type": "call", "path": "module.func", "obj_id": 2, "args": (1, 2), "kwargs": {"key": "value"}}
-            )
+        proxy = RPCProxy(path="module.func", obj_id=2, connection=mock_connection)
+        result = proxy(1, 2, key="value")
+        assert isinstance(result, RPCProxy)
+        assert result._rpc_path == "module.func()"
+        assert result._rpc_obj_id == 3
+        mock_connection.send.assert_called_once_with(
+            {"type": "call", "path": "module.func", "obj_id": 2, "args": (1, 2), "kwargs": {"key": "value"}}
+        )
 
     def test_call_error(self, mock_connection):
         """Test calling proxy with error response."""
@@ -83,27 +71,20 @@ class TestRPCProxy:
             "exception_pickle": None,
             "traceback": None,
         }
-
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy(path="module.func", obj_id=2)
-
-            with pytest.raises(RemoteException) as exc_info:
-                proxy(1, 2)
-
-            assert "TypeError" in str(exc_info.value)
+        proxy = RPCProxy(path="module.func", obj_id=2, connection=mock_connection)
+        with pytest.raises(RemoteException) as exc_info:
+            proxy(1, 2)
+        assert "TypeError" in str(exc_info.value)
 
     def test_getitem_success(self, mock_connection):
         """Test indexing proxy returns new proxy."""
         mock_connection.send.return_value = {"type": "success", "obj_id": 4}
-
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy(path="module.list", obj_id=3)
-            result = proxy[0]
-
-            assert isinstance(result, RPCProxy)
-            assert result._rpc_path == "module.list[0]"
-            assert result._rpc_obj_id == 4
-            mock_connection.send.assert_called_once_with({"type": "getitem", "obj_id": 3, "key": 0})
+        proxy = RPCProxy(path="module.list", obj_id=3, connection=mock_connection)
+        result = proxy[0]
+        assert isinstance(result, RPCProxy)
+        assert result._rpc_path == "module.list[0]"
+        assert result._rpc_obj_id == 4
+        mock_connection.send.assert_called_once_with({"type": "getitem", "obj_id": 3, "key": 0})
 
     def test_getitem_error(self, mock_connection):
         """Test indexing proxy with error response."""
@@ -114,18 +95,14 @@ class TestRPCProxy:
             "exception_pickle": None,
             "traceback": None,
         }
-
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy(path="module.list", obj_id=3)
-
-            with pytest.raises(RemoteException):
-                _ = proxy[999]
+        proxy = RPCProxy(path="module.list", obj_id=3, connection=mock_connection)
+        with pytest.raises(RemoteException):
+            _ = proxy[999]
 
     def test_repr(self, mock_connection):
         """Test proxy string representation."""
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy(path="test.path", obj_id=42)
-            assert repr(proxy) == "<RPCProxy: test.path (id=42)>"
+        proxy = RPCProxy(path="test.path", obj_id=42, connection=mock_connection)
+        assert repr(proxy) == "<RPCProxy: test.path (id=42)>"
 
 
 class TestRemoteException:
@@ -134,7 +111,6 @@ class TestRemoteException:
     def test_init_with_traceback(self):
         """Test RemoteException with traceback."""
         exc = RemoteException("Error message", "Traceback info")
-        # __str__ includes traceback when present
         assert "Error message" in str(exc)
         assert "Traceback info" in str(exc)
         assert exc.remote_traceback == "Traceback info"
@@ -165,13 +141,10 @@ class TestMaterialize:
     def test_materialize_proxy(self, mock_connection):
         """Test materializing a proxy object."""
         mock_connection.send.return_value = {"type": "success", "value": "actual_value"}
-
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy(path="test", obj_id=5)
-            result = materialize(proxy)
-
-            assert result == "actual_value"
-            mock_connection.send.assert_called_once_with({"type": "materialize", "obj_id": 5})
+        proxy = RPCProxy(path="test", obj_id=5, connection=mock_connection)
+        result = materialize(proxy)
+        assert result == "actual_value"
+        mock_connection.send.assert_called_once_with({"type": "materialize", "obj_id": 5})
 
     def test_materialize_non_proxy(self):
         """Test materializing a non-proxy object."""
@@ -188,23 +161,17 @@ class TestMaterialize:
             "exception_pickle": None,
             "traceback": None,
         }
-
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy(path="test", obj_id=5)
-
-            with pytest.raises(RemoteException):
-                materialize(proxy)
+        proxy = RPCProxy(path="test", obj_id=5, connection=mock_connection)
+        with pytest.raises(RemoteException):
+            materialize(proxy)
 
     def test_materialize_complex_value(self, mock_connection):
         """Test materializing complex values."""
         complex_value = {"list": [1, 2, 3], "dict": {"nested": True}}
         mock_connection.send.return_value = {"type": "success", "value": complex_value}
-
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy(path="test", obj_id=6)
-            result = materialize(proxy)
-
-            assert result == complex_value
+        proxy = RPCProxy(path="test", obj_id=6, connection=mock_connection)
+        result = materialize(proxy)
+        assert result == complex_value
 
 
 class TestIsProxy:
@@ -212,9 +179,8 @@ class TestIsProxy:
 
     def test_is_proxy_true(self, mock_connection):
         """Test is_proxy returns True for RPCProxy."""
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy()
-            assert is_proxy(proxy) is True
+        proxy = RPCProxy(connection=mock_connection)
+        assert is_proxy(proxy) is True
 
     def test_is_proxy_false(self):
         """Test is_proxy returns False for non-proxy objects."""
@@ -234,13 +200,10 @@ class TestProxyChaining:
             {"type": "success", "obj_id": 2},
             {"type": "success", "obj_id": 3},
         ]
-
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy(path="module", obj_id=1)
-            result = proxy.attr1.attr2
-
-            assert result._rpc_path == "module.attr1.attr2"
-            assert result._rpc_obj_id == 3
+        proxy = RPCProxy(path="module", obj_id=1, connection=mock_connection)
+        result = proxy.attr1.attr2
+        assert result._rpc_path == "module.attr1.attr2"
+        assert result._rpc_obj_id == 3
 
     def test_chained_call_and_getattr(self, mock_connection):
         """Test chaining calls and attribute access."""
@@ -248,10 +211,7 @@ class TestProxyChaining:
             {"type": "success", "obj_id": 2},
             {"type": "success", "obj_id": 3},
         ]
-
-        with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
-            proxy = RPCProxy(path="module.func", obj_id=1)
-            result = proxy().attr
-
-            assert result._rpc_path == "module.func().attr"
-            assert result._rpc_obj_id == 3
+        proxy = RPCProxy(path="module.func", obj_id=1, connection=mock_connection)
+        result = proxy().attr
+        assert result._rpc_path == "module.func().attr"
+        assert result._rpc_obj_id == 3

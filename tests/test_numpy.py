@@ -7,8 +7,7 @@ import time
 import numpy as np
 import pytest
 
-from simplerpc.client.connection import connect, disconnect
-from simplerpc.client.patcher import patch_module, unpatch_all
+from simplerpc.client.connection import connect
 from simplerpc.client.proxy import materialize
 from simplerpc.common.serialization import deserialize, serialize
 from simplerpc.server.server import RPCServer
@@ -131,22 +130,16 @@ def numpy_server():
 
     yield server
 
-    disconnect()
-    unpatch_all()
-
 
 class TestNumpyIntegration:
     """Integration tests for numpy operations over RPC."""
 
     def test_numpy_array_creation(self, numpy_server):
         """Test creating numpy arrays remotely."""
-        # Import numpy locally first for assertions
         import numpy as np_local
 
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
 
         arr = materialize(np_remote.array([1, 2, 3, 4, 5]))
 
@@ -157,13 +150,9 @@ class TestNumpyIntegration:
         """Test numpy.zeros over RPC."""
         import numpy as np_local
 
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         arr = materialize(np_remote.zeros(10))
-
         assert isinstance(arr, np_local.ndarray)
         assert arr.shape == (10,)
         assert np_local.array_equal(arr, np_local.zeros(10))
@@ -172,13 +161,9 @@ class TestNumpyIntegration:
         """Test numpy.ones over RPC."""
         import numpy as np_local
 
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         arr = materialize(np_remote.ones((3, 4)))
-
         assert isinstance(arr, np_local.ndarray)
         assert arr.shape == (3, 4)
         assert np_local.array_equal(arr, np_local.ones((3, 4)))
@@ -187,13 +172,9 @@ class TestNumpyIntegration:
         """Test numpy.arange over RPC."""
         import numpy as np_local
 
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         arr = materialize(np_remote.arange(0, 10, 2))
-
         assert isinstance(arr, np_local.ndarray)
         assert np_local.array_equal(arr, np_local.arange(0, 10, 2))
 
@@ -201,13 +182,9 @@ class TestNumpyIntegration:
         """Test numpy.linspace over RPC."""
         import numpy as np_local
 
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         arr = materialize(np_remote.linspace(0, 1, 11))
-
         assert isinstance(arr, np_local.ndarray)
         assert np_local.allclose(arr, np_local.linspace(0, 1, 11))
 
@@ -215,155 +192,99 @@ class TestNumpyIntegration:
         """Test numpy array reshaping over RPC."""
         import numpy as np_local
 
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         arr = materialize(np_remote.arange(12).reshape(3, 4))
-
         assert isinstance(arr, np_local.ndarray)
         assert arr.shape == (3, 4)
         assert np_local.array_equal(arr, np_local.arange(12).reshape(3, 4))
 
     def test_numpy_sum(self, numpy_server):
         """Test numpy.sum over RPC."""
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
-        # Create array and sum it in one chained operation
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         result = materialize(np_remote.array([1, 2, 3, 4, 5]).sum())
-
         assert result == 15
 
     def test_numpy_mean(self, numpy_server):
         """Test numpy.mean over RPC."""
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
-        # Create array and get mean in one chained operation
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         result = materialize(np_remote.array([1, 2, 3, 4, 5]).mean())
-
         assert result == 3.0
 
     def test_numpy_transpose(self, numpy_server):
         """Test numpy array transpose over RPC."""
         import numpy as np_local
 
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
-        # Test transpose via T attribute
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         result = materialize(np_remote.array([[1, 2, 3], [4, 5, 6]]).T)
-
         expected = np_local.array([[1, 4], [2, 5], [3, 6]])
         assert np_local.array_equal(result, expected)
 
     def test_numpy_indexing(self, numpy_server):
         """Test numpy array indexing over RPC."""
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
-        # Test simple indexing
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         arr = np_remote.array([10, 20, 30, 40, 50])
         result = materialize(arr[2])
-
         assert result == 30
 
     def test_numpy_dtype_preservation(self, numpy_server):
         """Test that numpy dtypes are preserved over RPC."""
         import numpy as np_local
 
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
-        # Test different dtypes - use simple array creation
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         int32_arr = materialize(np_remote.zeros(5, dtype="int32"))
         float64_arr = materialize(np_remote.ones(5, dtype="float64"))
-
         assert int32_arr.dtype == np_local.int32
         assert float64_arr.dtype == np_local.float64
 
     def test_numpy_complex_operations(self, numpy_server):
         """Test complex numpy operations over RPC."""
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
-        # Create array, reshape, compute mean via chaining
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         mean_val = materialize(np_remote.arange(20).reshape(4, 5).mean())
-
         assert mean_val == 9.5
 
     def test_numpy_large_array_transport(self, numpy_server):
         """Test transporting large numpy arrays over RPC."""
         import numpy as np_local
 
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
-        # Create large array via zeros (random.rand has event loop issues)
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         arr = materialize(np_remote.zeros((100, 100)))
-
         assert isinstance(arr, np_local.ndarray)
         assert arr.shape == (100, 100)
 
     def test_numpy_proxy_as_argument(self, numpy_server):
         """Test passing RPCProxy as argument to numpy functions."""
-
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
-        # Create array remotely and pass it to another function
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         arr = np_remote.array([1, 2, 3, 4, 5])
         result = materialize(np_remote.sum(arr))
-
         assert result == 15
 
     def test_numpy_multiple_proxy_arguments(self, numpy_server):
         """Test passing multiple RPCProxy objects as arguments."""
-
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
-        # Create two arrays and compute dot product
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         a = np_remote.array([1, 2, 3])
         b = np_remote.array([4, 5, 6])
         result = materialize(np_remote.dot(a, b))
-
-        assert result == 32  # 1*4 + 2*5 + 3*6
+        assert result == 32
 
     def test_numpy_matrix_multiply_with_proxies(self, numpy_server):
         """Test matrix multiplication with proxy arguments."""
         import numpy as np_local
 
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
-        # Create matrices and multiply
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         a = np_remote.array([[1, 2], [3, 4]])
         b = np_remote.array([[5, 6], [7, 8]])
         result = materialize(np_remote.matmul(a, b))
-
         expected = np_local.array([[19, 22], [43, 50]])
         assert np_local.array_equal(result, expected)
 
@@ -371,15 +292,9 @@ class TestNumpyIntegration:
         """Test numpy array slicing with slice objects."""
         import numpy as np_local
 
-        connect("localhost", numpy_server.port, token=numpy_server.token)
-        patch_module("numpy")
-
-        import numpy as np_remote
-
-        # Create 2D array and slice it
+        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+        np_remote = conn.modules.numpy
         arr = np_remote.arange(12).reshape(3, 4)
-        # Get first 2 rows
         result = materialize(arr[0:2])
-
         expected = np_local.arange(12).reshape(3, 4)[0:2]
         assert np_local.array_equal(result, expected)

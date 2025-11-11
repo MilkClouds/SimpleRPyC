@@ -6,13 +6,13 @@ import simplerpc
 from simplerpc import materialize
 
 # Connect to server (token auto-detected from SIMPLERPC_TOKEN env var)
-simplerpc.connect("localhost", 8000)
-atexit.register(simplerpc.disconnect)
+conn = simplerpc.connect("localhost", 8000)
+atexit.register(conn.disconnect)
 
 # Patch modules - client doesn't need them installed locally
-simplerpc.patch_module("os")
-simplerpc.patch_module("sys")
-simplerpc.patch_module("json")
+simplerpc.patch_module(conn, "os")
+simplerpc.patch_module(conn, "sys")
+simplerpc.patch_module(conn, "json")
 
 # Now we can import and use them as if they were local
 import json as remote_json  # noqa: E402
