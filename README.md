@@ -25,11 +25,9 @@ uv sync
 python -m simplerpc.server
 ```
 
-The server will print a token:
-```
-Starting RPC server on localhost:8000
-Token: <RANDOM_TOKEN>
-Connect with: simplerpc.connect('localhost', 8000, token='<RANDOM_TOKEN>')
+The server will print a token. Set it as environment variable:
+```bash
+export SIMPLERPC_TOKEN='<TOKEN_FROM_SERVER>'
 ```
 
 ### 2. Use the Client
@@ -38,8 +36,9 @@ Connect with: simplerpc.connect('localhost', 8000, token='<RANDOM_TOKEN>')
 import simplerpc
 from simplerpc import materialize
 
-# Connect to server
-simplerpc.connect("localhost", 8000, token="<TOKEN_FROM_SERVER>")
+# Connect to server (token auto-detected from SIMPLERPC_TOKEN env var)
+# Or pass explicitly: simplerpc.connect("localhost", 8000, token="...")
+simplerpc.connect("localhost", 8000)
 
 # Patch a module (client doesn't need it installed)
 simplerpc.patch_module("os")
@@ -92,6 +91,10 @@ reward = materialize(result[1]) # only reward
 - `patch_module(module_name)` - Patch a module with RPC proxy
 - `materialize(obj)` - Convert proxy to actual value
 - `is_proxy(obj)` - Check if object is a proxy
+
+### Environment Variables
+
+- `SIMPLERPC_TOKEN` - Authentication token (auto-detected by `connect()` if not provided)
 
 ### Server
 
