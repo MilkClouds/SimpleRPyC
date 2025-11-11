@@ -47,11 +47,15 @@ class ClientExecutor:
             func = obj if callable(obj) else getattr(obj, path.split(".")[-1].rstrip("()"))
         else:
             func = eval(path, self.globals)
-        return {"type": "success", "obj_id": self._store_object(func(*args, **kwargs))}
+        # Resolve proxy references in args and kwargs
+        resolved_args = self._resolve_proxies(args)
+        resolved_kwargs = self._resolve_proxies(kwargs)
+        return {"type": "success", "obj_id": self._store_object(func(*resolved_args, **resolved_kwargs))}
 
     def _getitem(self, obj_id: int, key: Any) -> dict:
         """Get item from object and return object ID."""
-        return {"type": "success", "obj_id": self._store_object(self.objects[obj_id][key])}
+        resolved_key = self._resolve_proxies(key)
+        return {"type": "success", "obj_id": self._store_object(self.objects[obj_id][resolved_key])}
 
     def _materialize(self, obj_id: int) -> dict:
         """Serialize object and return actual value."""
@@ -60,6 +64,18 @@ class ClientExecutor:
         obj = self.objects[obj_id]
         serialize(obj)  # Test serialization
         return {"type": "success", "value": obj}
+
+    def _resolve_proxies(self, obj: Any) -> Any:
+        """Resolve proxy references and slices to actual objects."""
+        if isinstance(obj, dict):
+            if obj.get("__rpc_proxy__"):
+                return self.objects[obj["obj_id"]]
+            elif obj.get("__slice__"):
+                return slice(obj["start"], obj["stop"], obj["step"])
+            return {k: self._resolve_proxies(v) for k, v in obj.items()}
+        elif isinstance(obj, (list, tuple)):
+            return type(obj)(self._resolve_proxies(item) for item in obj)
+        return obj
 
     def _store_object(self, obj: Any) -> int:
         """Store object and return its ID."""
