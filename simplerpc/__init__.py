@@ -17,8 +17,6 @@ from simplerpc.client.connection import Connection, connect
 from simplerpc.client.patcher import patch_module
 from simplerpc.client.proxy import is_proxy, materialize
 
-__version__ = "0.1.0"
-
 __all__ = [
     "connect",
     "patch_module",
