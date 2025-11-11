@@ -2,6 +2,11 @@
 
 Simple Remote Procedure Call over WebSocket with lazy evaluation and explicit materialization.
 
+- **Where is it used?**: I wrote this library to separate RL environment execution from RL policy. e.g. [SimplerEnv](https://github.com/simpler-env/SimplerEnv) requires `numpy<2.0` but common RL policies nowaday requires `numpy>=2.0`. This library allows us to run environment in separate process with `numpy<2.0` while keeping policy in main process with `numpy>=2.0`.
+- **Why you should use it instead of alternatives?**: Some similar projects, [RPyC](https://github.com/tomerfiliba-org/rpyc) and [Pyro5](https://github.com/irmen/Pyro5), requires you to write your code in a way that it can be executed remotely. But they adopt custom serde logic, does not support numpy array transport between `numpy<2.0` and `numpy>=2.0`. [zero](https://github.com/Ananto30/zero) is one promising candidate with [msgspec](https://jcristharif.com/msgspec/) serde and [zmq](https://zeromq.org/) transport. However they does not even support multiple argument(e.g. `remote_fn(a,b,c)`) for remote function call.
+
+<!-- TODO: feature table with comparison with alternatives. -->
+
 ## Features
 
 - **WebSocket-based RPC**: Fast, bidirectional communication
