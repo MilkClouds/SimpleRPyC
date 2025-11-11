@@ -7,6 +7,7 @@ class ClientExecutor:
     """Manages execution context for a single client."""
 
     def __init__(self):
+        """Initialize client executor."""
         self.globals = {"__builtins__": __builtins__}
         self.objects = {}  # obj_id -> object
         self.next_obj_id = 0

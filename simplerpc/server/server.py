@@ -14,6 +14,12 @@ class RPCServer:
     """WebSocket-based RPC server."""
 
     def __init__(self, host: str = "localhost", port: int = -1):
+        """Initialize RPC server.
+
+        Args:
+            host: Host to bind to
+            port: Port to bind to (-1 for auto)
+        """
         self.host = host
         self.port = port
         self.token = secrets.token_urlsafe(32)

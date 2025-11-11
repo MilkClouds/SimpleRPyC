@@ -26,52 +26,57 @@ def server():
 
     yield server
 
+    # Cleanup: No server-side cleanup needed (daemon thread will exit)
+
+
+@pytest.fixture
+def conn(server):
+    """Create connection with automatic cleanup."""
+    connection = connect("localhost", server.port, token=server.token)
+    yield connection
+    # Cleanup
+    connection.unpatch_all()
+    connection.disconnect()
+
 
 class TestBasicIntegration:
     """Basic integration tests."""
 
-    def test_connect_and_disconnect(self, server):
+    def test_connect_and_disconnect(self, conn):
         """Test basic connection lifecycle."""
-        conn = connect("localhost", server.port, token=server.token)
-        conn.disconnect()
+        # Connection is created and cleaned up by fixture
+        assert conn is not None
 
-    def test_modules_namespace(self, server):
+    def test_modules_namespace(self, conn):
         """Test accessing remote modules via conn.modules."""
-        conn = connect("localhost", server.port, token=server.token)
         remote_os = conn.modules.os
-
         assert is_proxy(remote_os)
 
-    def test_simple_function_call(self, server):
+    def test_simple_function_call(self, conn):
         """Test calling a simple function."""
-        conn = connect("localhost", server.port, token=server.token)
         remote_math = conn.modules.math
         result = materialize(remote_math.sqrt(16))
         assert result == 4.0
 
-    def test_builtins_namespace(self, server):
+    def test_builtins_namespace(self, conn):
         """Test accessing remote builtins."""
-        conn = connect("localhost", server.port, token=server.token)
         remote_len = conn.builtins.len
         result = materialize(remote_len([1, 2, 3]))
         assert result == 3
 
-    def test_eval(self, server):
+    def test_eval(self, conn):
         """Test eval method."""
-        conn = connect("localhost", server.port, token=server.token)
         result = materialize(conn.eval("2 + 3"))
         assert result == 5
 
-    def test_execute(self, server):
+    def test_execute(self, conn):
         """Test execute method."""
-        conn = connect("localhost", server.port, token=server.token)
         conn.execute("x = 42")
         result = materialize(conn.eval("x"))
         assert result == 42
 
-    def test_teleport(self, server):
+    def test_teleport(self, conn):
         """Test teleport method."""
-        conn = connect("localhost", server.port, token=server.token)
 
         def square(x):
             return x**2
@@ -84,23 +89,20 @@ class TestBasicIntegration:
 class TestModuleOperations:
     """Test module operations."""
 
-    def test_attribute_access(self, server):
+    def test_attribute_access(self, conn):
         """Test accessing module attributes."""
-        conn = connect("localhost", server.port, token=server.token)
         remote_sys = conn.modules.sys
         version = materialize(remote_sys.version)
         assert isinstance(version, str)
 
-    def test_function_with_arguments(self, server):
+    def test_function_with_arguments(self, conn):
         """Test function calls with arguments."""
-        conn = connect("localhost", server.port, token=server.token)
         remote_math = conn.modules.math
         result = materialize(remote_math.pow(2, 3))
         assert result == 8.0
 
-    def test_chained_operations(self, server):
+    def test_chained_operations(self, conn):
         """Test chained attribute access and calls."""
-        conn = connect("localhost", server.port, token=server.token)
         remote_os = conn.modules.os
         path = materialize(remote_os.path.join("a", "b", "c"))
         assert "a" in path and "b" in path and "c" in path
@@ -109,16 +111,14 @@ class TestModuleOperations:
 class TestIndexingOperations:
     """Test indexing operations."""
 
-    def test_list_indexing(self, server):
+    def test_list_indexing(self, conn):
         """Test list indexing."""
-        conn = connect("localhost", server.port, token=server.token)
         remote_sys = conn.modules.sys
         first_path = materialize(remote_sys.path[0])
         assert isinstance(first_path, str)
 
-    def test_dict_indexing(self, server):
+    def test_dict_indexing(self, conn):
         """Test dict indexing."""
-        conn = connect("localhost", server.port, token=server.token)
         remote_os = conn.modules.os
         proxy = remote_os.environ["PATH"]
         value = materialize(proxy)
@@ -128,9 +128,8 @@ class TestIndexingOperations:
 class TestErrorHandling:
     """Test error handling."""
 
-    def test_attribute_error(self, server):
+    def test_attribute_error(self, conn):
         """Test AttributeError propagation."""
-        conn = connect("localhost", server.port, token=server.token)
         remote_os = conn.modules.os
 
         from simplerpc.client.proxy import RemoteException
@@ -141,9 +140,8 @@ class TestErrorHandling:
         assert hasattr(exc_info.value, "remote_traceback")
         assert isinstance(exc_info.value.__cause__, AttributeError)
 
-    def test_import_error(self, server):
+    def test_import_error(self, conn):
         """Test ImportError propagation."""
-        conn = connect("localhost", server.port, token=server.token)
         from simplerpc.client.proxy import RemoteException
 
         with pytest.raises(RemoteException) as exc_info:
@@ -156,18 +154,16 @@ class TestErrorHandling:
 class TestComplexScenarios:
     """Test complex scenarios."""
 
-    def test_json_round_trip(self, server):
+    def test_json_round_trip(self, conn):
         """Test JSON serialization round trip."""
-        conn = connect("localhost", server.port, token=server.token)
         remote_json = conn.modules.json
         data = {"key": "value", "number": 42}
         json_str = materialize(remote_json.dumps(data))
         result = materialize(remote_json.loads(json_str))
         assert result == data
 
-    def test_multiple_modules(self, server):
+    def test_multiple_modules(self, conn):
         """Test using multiple modules."""
-        conn = connect("localhost", server.port, token=server.token)
         remote_math = conn.modules.math
         remote_os = conn.modules.os
         sqrt_result = materialize(remote_math.sqrt(25))
@@ -175,13 +171,11 @@ class TestComplexScenarios:
         assert sqrt_result == 5.0
         assert isinstance(sep, str)
 
-    def test_patch_module(self, server):
+    def test_patch_module(self, conn):
         """Test patch_module for sys.modules patching."""
-        conn = connect("localhost", server.port, token=server.token)
         conn.patch_module("math")
 
         import math as remote_math
 
         result = materialize(remote_math.sqrt(16))
         assert result == 4.0
-        sys.modules.pop("math", None)

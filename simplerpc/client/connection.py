@@ -53,6 +53,7 @@ class Connection:
         self.loop = None
         self.modules = _ModulesNamespace(self)
         self.builtins = _BuiltinsNamespace(self)
+        self._patched_modules = {}  # Track patched modules for cleanup
 
     def connect(self, host: str, port: int, token: str | None = None):
         """Connect to RPC server."""
@@ -112,8 +113,19 @@ class Connection:
         return RPCProxy(path=func.__name__, obj_id=response["obj_id"], connection=self)
 
     def patch_module(self, module_name: str):
-        """Import remote module and patch sys.modules."""
+        """Import remote module and patch sys.modules.
+
+        This method is idempotent - calling it multiple times for the same module
+        will not send additional RPC requests.
+        """
         from simplerpc.client.proxy import RPCProxy, _raise_deserialized_error
+
+        # Return existing proxy if already patched
+        if module_name in self._patched_modules:
+            return sys.modules.get(module_name)
+
+        # Store original module (or None if not imported)
+        self._patched_modules[module_name] = sys.modules.get(module_name)
 
         response = self.send({"type": "import_module", "module": module_name})
         if response["type"] == "error":
@@ -122,6 +134,20 @@ class Connection:
         proxy = RPCProxy(path=module_name, obj_id=response["obj_id"], connection=self)
         sys.modules[module_name] = proxy  # type: ignore
         return proxy
+
+    def unpatch_module(self, module_name: str):
+        """Restore original module in sys.modules."""
+        if module_name in self._patched_modules:
+            original = self._patched_modules.pop(module_name)
+            if original is None:
+                sys.modules.pop(module_name, None)
+            else:
+                sys.modules[module_name] = original
+
+    def unpatch_all(self):
+        """Restore all patched modules to their original state."""
+        for module_name in list(self._patched_modules.keys()):
+            self.unpatch_module(module_name)
 
     def send(self, message: dict) -> dict:
         """Send message synchronously."""
