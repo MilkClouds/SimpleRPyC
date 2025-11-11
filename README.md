@@ -112,7 +112,7 @@ See `example_client.py` for comprehensive examples.
 simplerpc/
 ├── client/
 │   ├── connection.py    # WebSocket connection management
-│   ├── proxy.py         # RPCProxy using unittest.mock
+│   ├── proxy.py         # Minimal RPCProxy implementation
 │   └── patcher.py       # sys.modules patching
 ├── server/
 │   ├── server.py        # WebSocket server

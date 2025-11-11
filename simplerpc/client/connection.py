@@ -2,8 +2,10 @@
 
 import asyncio
 import os
+
 import websockets
-from simplerpc.common.serialization import serialize, deserialize
+
+from simplerpc.common.serialization import deserialize, serialize
 
 
 class Connection:
@@ -12,57 +14,42 @@ class Connection:
     def __init__(self):
         self.ws = None
         self.loop = None
-        self.request_id = 0
-
-    async def _connect(self, host: str, port: int, token: str):
-        """Establish WebSocket connection."""
-        uri = f"ws://{host}:{port}?token={token}"
-        self.ws = await websockets.connect(uri)
 
     def connect(self, host: str, port: int, token: str | None = None):
         """Connect to RPC server."""
         if token is None:
             token = os.environ.get("SIMPLERPC_TOKEN")
-            if token is None:
+            if not token:
                 raise ValueError("Token must be provided or set in SIMPLERPC_TOKEN env var")
 
-        # Create event loop if not exists
         try:
             self.loop = asyncio.get_event_loop()
         except RuntimeError:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
 
-        # Connect
-        self.loop.run_until_complete(self._connect(host, port, token))
+        async def _connect():
+            self.ws = await websockets.connect(f"ws://{host}:{port}?token={token}")
 
-    async def _send(self, message: dict) -> dict:
-        """Send message and receive response."""
-        # Add request ID
-        message["id"] = str(self.request_id)
-        self.request_id += 1
-
-        # Serialize and send
-        data = serialize(message)
-        await self.ws.send(data)
-
-        # Receive response
-        response_data = await self.ws.recv()
-        return deserialize(response_data)
+        self.loop.run_until_complete(_connect())
 
     def send(self, message: dict) -> dict:
         """Send message synchronously."""
-        return self.loop.run_until_complete(self._send(message))
 
-    async def _disconnect(self):
-        """Close WebSocket connection."""
-        if self.ws:
-            await self.ws.close()
+        async def _send():
+            await self.ws.send(serialize(message))
+            return deserialize(await self.ws.recv())
+
+        return self.loop.run_until_complete(_send())
 
     def disconnect(self):
         """Disconnect from server."""
         if self.ws:
-            self.loop.run_until_complete(self._disconnect())
+
+            async def _disconnect():
+                await self.ws.close()
+
+            self.loop.run_until_complete(_disconnect())
 
 
 # Global connection instance
@@ -79,8 +66,7 @@ def get_connection() -> Connection:
 
 def connect(host: str = "localhost", port: int = 8000, token: str | None = None):
     """Connect to RPC server."""
-    conn = get_connection()
-    conn.connect(host, port, token)
+    get_connection().connect(host, port, token)
 
 
 def disconnect():
