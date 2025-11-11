@@ -13,11 +13,12 @@ from simplerpc.server.executor import ClientExecutor
 class RPCServer:
     """WebSocket-based RPC server."""
 
-    def __init__(self, host: str = "localhost", port: int = 8000):
+    def __init__(self, host: str = "localhost", port: int = -1):
         self.host = host
         self.port = port
         self.token = secrets.token_urlsafe(32)
         self.executors = {}  # websocket -> ClientExecutor
+        self.server = None
 
     async def handler(self, websocket):
         """Handle client connection."""
@@ -57,6 +58,25 @@ class RPCServer:
 
     async def serve(self):
         """Start server."""
+        # Auto-seek port if port=-1
+        if self.port == -1:
+            port = 8000
+            while True:
+                try:
+                    self.server = await websockets.serve(self.handler, self.host, port)
+                    self.port = port
+                    break
+                except OSError:
+                    port += 1
+                    if port > 9000:
+                        raise RuntimeError("No available port found between 8000-9000")
+        else:
+            # Use specified port, panic if fails
+            try:
+                self.server = await websockets.serve(self.handler, self.host, self.port)
+            except OSError as e:
+                raise RuntimeError(f"Failed to bind to {self.host}:{self.port}") from e
+
         print(f"Starting RPC server on {self.host}:{self.port}")
         print(f"Token: {self.token}")
         print("\nSet environment variable:")
@@ -64,8 +84,7 @@ class RPCServer:
         print("\nOr connect with:")
         print(f"  simplerpc.connect('{self.host}', {self.port}, token='{self.token}')")
 
-        async with websockets.serve(self.handler, self.host, self.port):
-            await asyncio.Future()  # Run forever
+        await asyncio.Future()  # Run forever
 
     def run(self):
         """Run server (blocking)."""
@@ -78,7 +97,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="SimpleRPC Server")
     parser.add_argument("--host", default="localhost", help="Host to bind to")
-    parser.add_argument("--port", type=int, default=8000, help="Port to bind to")
+    parser.add_argument("--port", type=int, default=-1, help="Port to bind to (-1 for auto)")
 
     args = parser.parse_args()
 
