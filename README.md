@@ -7,22 +7,43 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
-Simple Remote Procedure Call over WebSocket with lazy evaluation and explicit materialization.
+WebSocket-based RPC with transparent proxy objects and numpy cross-version compatibility.
 
-- **Where is it used?**: I wrote this library to separate RL environment execution from RL policy. e.g. [SimplerEnv](https://github.com/simpler-env/SimplerEnv) requires `numpy<2.0` but common RL policies nowaday requires `numpy>=2.0`. This library allows us to run environment in separate process with `numpy<2.0` while keeping policy in main process with `numpy>=2.0`.
-- **Why you should use it instead of alternatives?**: Some similar projects, [RPyC](https://github.com/tomerfiliba-org/rpyc) and [Pyro5](https://github.com/irmen/Pyro5), requires you to write your code in a way that it can be executed remotely. But they adopt custom serde logic, does not support numpy array transport between `numpy<2.0` and `numpy>=2.0`. [zero](https://github.com/Ananto30/zero) is one promising candidate with [msgspec](https://jcristharif.com/msgspec/) serde and [zmq](https://zeromq.org/) transport. However they does not even support multiple argument(e.g. `remote_fn(a,b,c)`) for remote function call.
+## Why SimpleRPC?
 
-<!-- TODO: feature table with comparison with alternatives. -->
+**Problem**: Running code with incompatible dependencies in the same process.
+
+For example, robotics simulation environments like [SimplerEnv](https://github.com/simpler-env/SimplerEnv) (a robot manipulation benchmark) require `numpy<2.0`, but modern RL policies require `numpy>=2.0`. You can't install both in the same environment.
+
+**Solution**: Run them in separate processes and communicate via RPC.
+
+## Why Not Alternatives?
+
+| Feature | SimpleRPC | [RPyC](https://github.com/tomerfiliba-org/rpyc) | [Pyro5](https://github.com/irmen/Pyro5) | [zero](https://github.com/Ananto30/zero) |
+|---------|-----------|------|-------|------|
+| Transport | WebSocket | TCP + custom protocol | TCP + custom protocol | ZMQ |
+| Serialization | [msgpack](https://msgpack.org/) | brine (custom) | [serpent](https://github.com/irmen/Serpent) | [msgspec](https://jcristharif.com/msgspec/) |
+| NumPy support | ✅ Built-in | ✅ Yes | ❌ [No](https://github.com/irmen/Pyro5/blob/6bfe2e523f93d205ea7a97ec9e1e01d7437821fd/docs/source/tipstricks.rst?plain=1#L357-L390) | ❌ No |
+| NumPy 1.x ↔ 2.x | ✅ Yes | ❌ No | ❌ No | ❌ No |
+| Multiple args | ✅ `f(a,b,c)` | ✅ Yes | ✅ Yes | ❌ No |
+| Module patching | ✅ Yes | ✅ Yes | ❌ No | ❌ No |
+| Proxy objects | ✅ Yes | ✅ Yes | ✅ Yes | ❌ No |
+
+**[RPyC](https://github.com/tomerfiliba-org/rpyc)**: Uses TCP with custom framing/channel layer and "brine" serialization. Supports numpy arrays but breaks when transferring between numpy 1.x and 2.x due to pickle format changes. Custom serialization format makes it hard to add additional features.
+
+**[Pyro5](https://github.com/irmen/Pyro5)**: Uses TCP with custom wire protocol and serpent serializer. [No built-in numpy support](https://github.com/irmen/Pyro5/blob/6bfe2e523f93d205ea7a97ec9e1e01d7437821fd/docs/source/tipstricks.rst?plain=1#L357-L390) - requires manual workarounds that don't handle numpy 1.x ↔ 2.x transfers.
+
+**[zero](https://github.com/Ananto30/zero)**: Promising msgspec+ZMQ stack, but doesn't support multiple arguments (`remote_fn(a, b, c)` fails) or proxy objects.
 
 ## Features
 
-- **WebSocket-based RPC**: Fast, bidirectional communication
-- **Lazy Evaluation**: Everything returns proxies by default
-- **Explicit Materialization**: User controls when to fetch data from server
-- **Token Authentication**: Secure connection with random tokens
-- **msgpack Serialization**: Efficient binary serialization with numpy support
-- **Flexible API**: Module patching for import-style usage, or namespace access for explicit remote calls
-- **Advanced Features**: Remote code execution (`eval`, `execute`), function teleportation
+- **WebSocket Transport**: Standard protocol, easy to debug, works through firewalls
+- **[msgpack](https://msgpack.org/) + NumPy**: Efficient binary serialization with cross-version numpy compatibility via [msgpack-numpy](https://github.com/lebedov/msgpack-numpy)
+- **Transparent Proxies**: Remote objects behave like local objects
+- **Explicit Materialization**: Control when to transfer data from server (`materialize()`)
+- **Flexible API**: Module patching (`import os`) or explicit access (`conn.modules.os`)
+- **Function Teleportation**: Send local functions to remote server with `conn.teleport()` using [dill](https://github.com/uqfoundation/dill)
+- **Remote Execution**: Run arbitrary code on server with `conn.eval()` and `conn.execute()`
 
 ## ⚠️ Security Warning
 
@@ -100,29 +121,48 @@ arr = materialize(remote_np.array([1, 2, 3]))
 conn.disconnect()
 ```
 
+## Examples
+
+See [`example_client.py`](example_client.py) for comprehensive examples including:
+- Understanding proxies and materialization
+- NumPy array operations (1D and 2D)
+- Remote code execution (`eval` and `execute`)
+- Nested data structures with NumPy arrays
+
 ## Core Concepts
 
-### Proxies vs Materialization
+### Transparent Proxies
 
-**Problem**: When should RPC return a proxy vs actual value?
-
-**Solution**: Everything returns `RPCProxy` by default (lazy evaluation). User explicitly calls `materialize(obj)` when actual value is needed.
+All remote operations return `RPCProxy` objects that behave like the actual objects:
 
 ```python
-# Everything is proxy by default
-env = simpler_env.make('...')  # RPCProxy
-result = env.step(action)       # RPCProxy
+# Remote function call returns proxy
+arr_proxy = remote_np.array([1, 2, 3])  # RPCProxy, not actual array
 
-# Explicit materialization when needed
-obs, reward, done, truncated, info = materialize(result)  # actual values
-instruction = materialize(env.get_language_instruction())  # str
+# Proxy supports attribute access, method calls, indexing
+mean_proxy = arr_proxy.mean()           # RPCProxy
+item_proxy = arr_proxy[0]               # RPCProxy
 
-# Partial materialization also possible
-obs = materialize(result[0])    # only observation
-reward = materialize(result[1]) # only reward
+# Chain operations without network round-trips
+result_proxy = remote_np.array([1, 2, 3]).reshape(3, 1).mean()  # Still proxy
 ```
 
-**Key principle**: User decides when to fetch data from server, not the library.
+### Explicit Materialization
+
+Use `materialize()` to transfer data from server to client:
+
+```python
+# Materialize when you need actual values
+arr = materialize(arr_proxy)            # numpy array
+mean = materialize(mean_proxy)          # float
+item = materialize(item_proxy)          # int
+
+# Materialize complex structures
+env = simpler_env.make('...')           # RPCProxy
+obs, reward, done, truncated, info = materialize(env.step(action))  # actual values
+```
+
+**Design principle**: Minimize network transfers by keeping operations on server until results are needed.
 
 ## API Reference
 
@@ -197,13 +237,31 @@ The server will print a token. Set it as environment variable:
 export SIMPLERPC_TOKEN='<TOKEN_FROM_SERVER>'
 ```
 
-## Examples
+## Design Decisions
 
-See `example_client.py` for comprehensive examples.
+### Why WebSocket?
 
-## Design Notes
+- **Standard protocol**: Works with existing infrastructure (proxies, load balancers)
+- **Bidirectional**: Server can push data to client (future feature)
+- **Debuggable**: Easy to inspect with browser dev tools or Wireshark
+- **Firewall-friendly**: Uses standard HTTP ports
 
-SimpleRPC draws inspiration from [RPyC](https://github.com/tomerfiliba-org/rpyc)'s elegant design patterns while focusing on WebSocket transport and numpy compatibility. We adopt proven patterns from established RPC libraries and adapt them for modern use cases.
+### Why [msgpack](https://msgpack.org/) + [msgpack-numpy](https://github.com/lebedov/msgpack-numpy)?
+
+- **Efficient**: Binary format, smaller than JSON
+- **NumPy support**: Native serialization for numpy arrays
+- **Cross-version**: Works between numpy 1.x and 2.x (unlike pickle)
+- **Language-agnostic**: Can implement clients in other languages
+
+### Why Proxy-based Design?
+
+Inspired by [RPyC](https://github.com/tomerfiliba-org/rpyc)'s elegant proxy pattern:
+
+- **Transparent**: Remote objects behave like local objects
+- **Efficient**: Chain operations on server without network round-trips
+- **Explicit control**: User decides when to transfer data with `materialize()`
+
+Unlike RPyC, we use WebSocket transport and msgpack serialization for better numpy compatibility.
 
 ## Architecture
 
