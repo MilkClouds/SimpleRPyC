@@ -1,8 +1,6 @@
 """Tests for simplerpc.server.executor module."""
 
-from unittest.mock import Mock, patch
-
-import pytest
+from unittest.mock import Mock
 
 from simplerpc.server.executor import ClientExecutor
 
@@ -77,7 +75,7 @@ class TestGetattr:
         executor = ClientExecutor()
 
         # First import os
-        import_response = executor._import_module("os")
+        import_response = executor._import_module("os")  # noqa: F841
 
         # Then get getcwd attribute
         response = executor._getattr("os", None, "getcwd")

@@ -139,7 +139,7 @@ class TestSerialization:
             serialized = serialize(original)
             deserialized = deserialize(serialized)
             assert deserialized == original
-            assert type(deserialized) == type(original)
+            assert type(deserialized) is type(original)
 
 
 class TestExceptionSerialization:
