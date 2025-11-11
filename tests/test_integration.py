@@ -6,8 +6,7 @@ import time
 
 import pytest
 
-from simplerpc.client.connection import connect, disconnect
-from simplerpc.client.patcher import patch_module, unpatch_all
+from simplerpc.client.connection import connect
 from simplerpc.client.proxy import is_proxy, materialize
 from simplerpc.server.server import RPCServer
 
@@ -17,81 +16,93 @@ def server():
     """Start server in background thread."""
     server = RPCServer(host="localhost", port=-1)
 
-    # Start server in background thread
     def run_server():
         asyncio.run(server.serve())
 
     thread = threading.Thread(target=run_server, daemon=True)
     thread.start()
-
-    # Wait for server to start
     time.sleep(0.5)
 
     yield server
 
+    # Cleanup: No server-side cleanup needed (daemon thread will exit)
+
+
+@pytest.fixture
+def conn(server):
+    """Create connection with automatic cleanup."""
+    connection = connect("localhost", server.port, token=server.token)
+    yield connection
     # Cleanup
-    disconnect()
-    unpatch_all()
+    connection.unpatch_all()
+    connection.disconnect()
 
 
 class TestBasicIntegration:
     """Basic integration tests."""
 
-    def test_connect_and_disconnect(self, server):
+    def test_connect_and_disconnect(self, conn):
         """Test basic connection lifecycle."""
-        connect("localhost", server.port, token=server.token)
-        disconnect()
+        # Connection is created and cleaned up by fixture
+        assert conn is not None
 
-    def test_import_module(self, server):
-        """Test importing a module."""
-        connect("localhost", server.port, token=server.token)
-        patch_module("os")
-
-        import os as remote_os
-
+    def test_modules_namespace(self, conn):
+        """Test accessing remote modules via conn.modules."""
+        remote_os = conn.modules.os
         assert is_proxy(remote_os)
 
-    def test_simple_function_call(self, server):
+    def test_simple_function_call(self, conn):
         """Test calling a simple function."""
-        connect("localhost", server.port, token=server.token)
-        patch_module("math")
-
-        import math as remote_math
-
+        remote_math = conn.modules.math
         result = materialize(remote_math.sqrt(16))
         assert result == 4.0
+
+    def test_builtins_namespace(self, conn):
+        """Test accessing remote builtins."""
+        remote_len = conn.builtins.len
+        result = materialize(remote_len([1, 2, 3]))
+        assert result == 3
+
+    def test_eval(self, conn):
+        """Test eval method."""
+        result = materialize(conn.eval("2 + 3"))
+        assert result == 5
+
+    def test_execute(self, conn):
+        """Test execute method."""
+        conn.execute("x = 42")
+        result = materialize(conn.eval("x"))
+        assert result == 42
+
+    def test_teleport(self, conn):
+        """Test teleport method."""
+
+        def square(x):
+            return x**2
+
+        remote_square = conn.teleport(square)
+        result = materialize(remote_square(5))
+        assert result == 25
 
 
 class TestModuleOperations:
     """Test module operations."""
 
-    def test_attribute_access(self, server):
+    def test_attribute_access(self, conn):
         """Test accessing module attributes."""
-        connect("localhost", server.port, token=server.token)
-        patch_module("sys")
-
-        import sys as remote_sys
-
+        remote_sys = conn.modules.sys
         version = materialize(remote_sys.version)
         assert isinstance(version, str)
 
-    def test_function_with_arguments(self, server):
+    def test_function_with_arguments(self, conn):
         """Test function calls with arguments."""
-        connect("localhost", server.port, token=server.token)
-        patch_module("math")
-
-        import math as remote_math
-
+        remote_math = conn.modules.math
         result = materialize(remote_math.pow(2, 3))
         assert result == 8.0
 
-    def test_chained_operations(self, server):
+    def test_chained_operations(self, conn):
         """Test chained attribute access and calls."""
-        connect("localhost", server.port, token=server.token)
-        patch_module("os")
-
-        import os as remote_os
-
+        remote_os = conn.modules.os
         path = materialize(remote_os.path.join("a", "b", "c"))
         assert "a" in path and "b" in path and "c" in path
 
@@ -99,24 +110,15 @@ class TestModuleOperations:
 class TestIndexingOperations:
     """Test indexing operations."""
 
-    def test_list_indexing(self, server):
+    def test_list_indexing(self, conn):
         """Test list indexing."""
-        connect("localhost", server.port, token=server.token)
-        patch_module("sys")
-
-        import sys as remote_sys
-
+        remote_sys = conn.modules.sys
         first_path = materialize(remote_sys.path[0])
         assert isinstance(first_path, str)
 
-    def test_dict_indexing(self, server):
+    def test_dict_indexing(self, conn):
         """Test dict indexing."""
-        connect("localhost", server.port, token=server.token)
-        patch_module("os")
-
-        import os as remote_os
-
-        # environ is a dict-like object
+        remote_os = conn.modules.os
         proxy = remote_os.environ["PATH"]
         value = materialize(proxy)
         assert isinstance(value, str)
@@ -125,12 +127,9 @@ class TestIndexingOperations:
 class TestErrorHandling:
     """Test error handling."""
 
-    def test_attribute_error(self, server):
+    def test_attribute_error(self, conn):
         """Test AttributeError propagation."""
-        connect("localhost", server.port, token=server.token)
-        patch_module("os")
-
-        import os as remote_os
+        remote_os = conn.modules.os
 
         from simplerpc.client.proxy import RemoteException
 
@@ -140,13 +139,12 @@ class TestErrorHandling:
         assert hasattr(exc_info.value, "remote_traceback")
         assert isinstance(exc_info.value.__cause__, AttributeError)
 
-    def test_import_error(self, server):
+    def test_import_error(self, conn):
         """Test ImportError propagation."""
-        connect("localhost", server.port, token=server.token)
         from simplerpc.client.proxy import RemoteException
 
         with pytest.raises(RemoteException) as exc_info:
-            patch_module("nonexistent_module_xyz")
+            conn.modules.nonexistent_module_xyz
 
         assert hasattr(exc_info.value, "remote_traceback")
         assert isinstance(exc_info.value.__cause__, (ModuleNotFoundError, ImportError))
@@ -155,29 +153,28 @@ class TestErrorHandling:
 class TestComplexScenarios:
     """Test complex scenarios."""
 
-    def test_json_round_trip(self, server):
+    def test_json_round_trip(self, conn):
         """Test JSON serialization round trip."""
-        connect("localhost", server.port, token=server.token)
-        patch_module("json")
-
-        import json as remote_json
-
+        remote_json = conn.modules.json
         data = {"key": "value", "number": 42}
         json_str = materialize(remote_json.dumps(data))
         result = materialize(remote_json.loads(json_str))
         assert result == data
 
-    def test_multiple_modules(self, server):
+    def test_multiple_modules(self, conn):
         """Test using multiple modules."""
-        connect("localhost", server.port, token=server.token)
-        patch_module("math")
-        patch_module("os")
-
-        import math as remote_math
-        import os as remote_os
-
+        remote_math = conn.modules.math
+        remote_os = conn.modules.os
         sqrt_result = materialize(remote_math.sqrt(25))
         sep = materialize(remote_os.sep)
-
         assert sqrt_result == 5.0
         assert isinstance(sep, str)
+
+    def test_patch_module(self, conn):
+        """Test patch_module for sys.modules patching."""
+        conn.patch_module("math")
+
+        import math as remote_math
+
+        result = materialize(remote_math.sqrt(16))
+        assert result == 4.0

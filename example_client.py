@@ -5,54 +5,88 @@ import atexit
 import simplerpc
 from simplerpc import materialize
 
+# ============================================================================
+# Setup: Connect to server and patch modules
+# ============================================================================
+
 # Connect to server (token auto-detected from SIMPLERPC_TOKEN env var)
-simplerpc.connect("localhost", 8000)
-atexit.register(simplerpc.disconnect)
+conn = simplerpc.connect("localhost", 8000)
+atexit.register(conn.disconnect)
 
 # Patch modules - client doesn't need them installed locally
-simplerpc.patch_module("os")
-simplerpc.patch_module("sys")
-simplerpc.patch_module("json")
+simplerpc.patch_module(conn, "os")
+simplerpc.patch_module(conn, "numpy")
 
-# Now we can import and use them as if they were local
-import json as remote_json  # noqa: E402
+# Import patched modules as if they were local
 import os as remote_os  # noqa: E402
-import sys as remote_sys  # noqa: E402
 
-print("=== SimpleRPC Example ===\n")
+import numpy as remote_np  # noqa: E402
 
-# Example 1: Simple function call
-print("1. Calling os.getcwd()...")
+# ============================================================================
+# Example 1: Understanding Proxies
+# ============================================================================
+
+# Everything returns a proxy by default (lazy evaluation)
 cwd_proxy = remote_os.getcwd()
-print(f"   Result is proxy: {simplerpc.is_proxy(cwd_proxy)}")
+print(f"{simplerpc.is_proxy(cwd_proxy)=}")
+
+# Materialize to get actual value
 cwd = materialize(cwd_proxy)
-print(f"   Current directory: {cwd}\n")
+print(f"{simplerpc.is_proxy(cwd)=}")
+print(f"{cwd=}")
 
-# Example 2: Attribute access and indexing
-print("2. Accessing sys.path...")
-path_proxy = remote_sys.path
-print(f"   sys.path is proxy: {simplerpc.is_proxy(path_proxy)}")
-first_item = materialize(path_proxy[0])
-print(f"   First item: {first_item}\n")
 
-# Example 3: Complex operations
-print("3. JSON operations...")
-data = {"name": "SimpleRPC", "version": "0.1.0", "features": ["websocket", "msgpack", "lazy"]}
-json_str_proxy = remote_json.dumps(data, indent=2)
-json_str = materialize(json_str_proxy)
-print(f"   Serialized JSON:\n{json_str}\n")
+# ============================================================================
+# Example 2: NumPy Array Operations (1D and 2D)
+# ============================================================================
 
-# Example 4: Chained operations
-print("4. Chained operations...")
-env_proxy = remote_os.environ
-home_proxy = env_proxy.get("HOME", "not set")
-home = materialize(home_proxy)
-print(f"   HOME environment variable: {home}\n")
+# Create 1D array
+arr_proxy = remote_np.array([1, 2, 3, 4, 5])
+arr_local = materialize(arr_proxy)
+print(f"\n{arr_local=}")
 
-# Example 5: List operations
-print("5. List operations...")
-path_list = materialize(remote_sys.path)
-print(f"   sys.path has {len(path_list)} entries")
-print(f"   First 3: {path_list[:3]}\n")
+# Option 1: Compute mean on remote proxy
+mean_remote = materialize(remote_np.mean(arr_proxy))
+print(f"{mean_remote=}")
 
-print("=== All examples completed successfully! ===")
+# Option 2: Compute mean on materialized local array
+mean_local = materialize(remote_np.mean(arr_local))
+print(f"{mean_local=}")
+
+# Create and manipulate 2D array
+matrix = materialize(remote_np.arange(12).reshape(3, 4))
+print(f"\n{matrix=}")
+
+
+# ============================================================================
+# Example 3: Remote Code Execution (eval & execute)
+# ============================================================================
+
+# Execute code remotely (no return value)
+conn.execute("import random; random.seed(42)")
+
+# Evaluate expression remotely (returns proxy)
+random_num = materialize(conn.eval("random.randint(1, 100)"))
+print(f"\n{random_num=}")
+
+
+# ============================================================================
+# Example 4: Nested Data Structures with NumPy
+# ============================================================================
+
+# Create nested structure remotely using eval
+nested = materialize(
+    conn.eval("""
+{
+    'metadata': {'name': 'experiment_1', 'version': 1.0},
+    'arrays': [numpy.array([1.0, 2.0, 3.0]), numpy.array([[4, 5], [6, 7]])],
+    'coordinates': (numpy.array([10, 20, 30]), numpy.array([40, 50, 60])),
+    'scalar': 42,
+}
+""")
+)
+
+print(f"\n{nested=}")
+
+
+print("\n=== All examples completed successfully! ===")
