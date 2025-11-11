@@ -121,6 +121,12 @@ simplerpc/
     └── serialization.py # msgpack with numpy support
 ```
 
+## Requirements
+
+**Python 3.10+** is required. Python 3.9 is not supported due to:
+- WebSocket concurrency issues with nested asyncio event loops in synchronous RPC context
+- `nest_asyncio` compatibility issues causing `ConcurrencyError` in websockets
+
 ## License
 
 MIT
