@@ -1,11 +1,12 @@
 """Tests for simplerpc.client.patcher module."""
 
 import sys
-import pytest
 from unittest.mock import Mock, patch
 
-from simplerpc.client.patcher import patch_module, unpatch_all, _original_modules
-from simplerpc.client.proxy import RPCProxy, RemoteException
+import pytest
+
+from simplerpc.client.patcher import _original_modules, patch_module, unpatch_all
+from simplerpc.client.proxy import RemoteException, RPCProxy
 
 
 class TestPatchModule:
@@ -76,7 +77,9 @@ class TestPatchModule:
         """Test patching module with server error."""
         mock_connection.send.return_value = {
             "type": "error",
-            "error": "ModuleNotFoundError: No module named 'nonexistent'",
+            "exception_type": "builtins.ModuleNotFoundError",
+            "exception_message": "No module named 'nonexistent'",
+            "exception_pickle": None,
             "traceback": "Traceback...",
         }
 

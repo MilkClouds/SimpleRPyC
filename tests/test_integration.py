@@ -131,19 +131,25 @@ class TestErrorHandling:
         patch_module("os")
 
         import os as remote_os
+
         from simplerpc.client.proxy import RemoteException
 
-        with pytest.raises(RemoteException):
+        with pytest.raises(RemoteException) as exc_info:
             materialize(remote_os.nonexistent_attribute)
+
+        assert hasattr(exc_info.value, "remote_traceback")
+        assert isinstance(exc_info.value.__cause__, AttributeError)
 
     def test_import_error(self, server):
         """Test ImportError propagation."""
         connect("localhost", server.port, token=server.token)
         from simplerpc.client.proxy import RemoteException
 
-        with pytest.raises(RemoteException):
+        with pytest.raises(RemoteException) as exc_info:
             patch_module("nonexistent_module_xyz")
-            import nonexistent_module_xyz  # noqa: F401
+
+        assert hasattr(exc_info.value, "remote_traceback")
+        assert isinstance(exc_info.value.__cause__, (ModuleNotFoundError, ImportError))
 
 
 class TestComplexScenarios:

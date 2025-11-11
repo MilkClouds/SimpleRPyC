@@ -1,5 +1,8 @@
-"""Serialization using msgpack with numpy support."""
+"""Serialization using msgpack with numpy support and dill for exceptions."""
 
+import traceback
+
+import dill
 import msgpack
 import msgpack_numpy as m
 
@@ -32,3 +35,38 @@ def serialize(obj) -> bytes:
 def deserialize(data: bytes):
     """Deserialize msgpack bytes to object."""
     return msgpack.unpackb(data, raw=False, strict_map_key=False)
+
+
+def serialize_exception(exc: Exception) -> dict:
+    """Serialize exception with dill."""
+    try:
+        exception_pickle = dill.dumps(exc)
+    except Exception:
+        exception_pickle = None
+
+    return {
+        "exception_type": f"{exc.__class__.__module__}.{exc.__class__.__name__}",
+        "exception_message": str(exc),
+        "exception_pickle": exception_pickle,
+        "traceback": traceback.format_exc(),
+    }
+
+
+def deserialize_exception(exc_data: dict) -> tuple[Exception, Exception | None]:
+    """Deserialize exception. Returns (RemoteException, original_exception)."""
+    from simplerpc.client.proxy import RemoteException
+
+    exc_type = exc_data.get("exception_type", "Exception")
+    exc_message = exc_data.get("exception_message", "Unknown error")
+    exc_traceback = exc_data.get("traceback")
+
+    remote_exc = RemoteException(f"{exc_type}: {exc_message}", traceback=exc_traceback, exception_type=exc_type)
+
+    if exc_data.get("exception_pickle"):
+        try:
+            original_exc = dill.loads(exc_data["exception_pickle"])
+            return (remote_exc, original_exc)
+        except Exception:
+            pass
+
+    return (remote_exc, None)

@@ -1,6 +1,8 @@
 """Tests for simplerpc.server.executor module."""
 
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
+
+import pytest
 
 from simplerpc.server.executor import ClientExecutor
 
@@ -338,10 +340,10 @@ class TestHandleMessage:
         """Test handling message that raises exception."""
         executor = ClientExecutor()
 
-        # Try to get item from non-existent object
         msg = {"type": "getitem", "obj_id": 999, "key": 0}
         response = executor.handle_message(msg)
 
         assert response["type"] == "error"
-        assert "error" in response
+        assert "exception_type" in response
+        assert "exception_message" in response
         assert "traceback" in response

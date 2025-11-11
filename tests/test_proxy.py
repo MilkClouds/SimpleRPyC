@@ -44,7 +44,9 @@ class TestRPCProxy:
         """Test attribute access with error response."""
         mock_connection.send.return_value = {
             "type": "error",
-            "error": "AttributeError: no such attribute",
+            "exception_type": "builtins.AttributeError",
+            "exception_message": "no such attribute",
+            "exception_pickle": None,
             "traceback": "Traceback...",
         }
 
@@ -76,7 +78,9 @@ class TestRPCProxy:
         """Test calling proxy with error response."""
         mock_connection.send.return_value = {
             "type": "error",
-            "error": "TypeError: invalid arguments",
+            "exception_type": "builtins.TypeError",
+            "exception_message": "invalid arguments",
+            "exception_pickle": None,
             "traceback": None,
         }
 
@@ -103,7 +107,13 @@ class TestRPCProxy:
 
     def test_getitem_error(self, mock_connection):
         """Test indexing proxy with error response."""
-        mock_connection.send.return_value = {"type": "error", "error": "IndexError: list index out of range"}
+        mock_connection.send.return_value = {
+            "type": "error",
+            "exception_type": "builtins.IndexError",
+            "exception_message": "list index out of range",
+            "exception_pickle": None,
+            "traceback": None,
+        }
 
         with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
             proxy = RPCProxy(path="module.list", obj_id=3)
@@ -171,7 +181,13 @@ class TestMaterialize:
 
     def test_materialize_error(self, mock_connection):
         """Test materializing with error response."""
-        mock_connection.send.return_value = {"type": "error", "error": "Serialization error"}
+        mock_connection.send.return_value = {
+            "type": "error",
+            "exception_type": "builtins.RuntimeError",
+            "exception_message": "Serialization error",
+            "exception_pickle": None,
+            "traceback": None,
+        }
 
         with patch("simplerpc.client.proxy.get_connection", return_value=mock_connection):
             proxy = RPCProxy(path="test", obj_id=5)

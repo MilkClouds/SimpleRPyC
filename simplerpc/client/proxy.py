@@ -5,6 +5,16 @@ from typing import Any
 from simplerpc.client.connection import get_connection
 
 
+def _raise_deserialized_error(response: dict):
+    """Deserialize and raise error."""
+    from simplerpc.common.serialization import deserialize_exception
+
+    exc, cause = deserialize_exception(response)
+    if cause:
+        raise exc from cause
+    raise exc
+
+
 class RPCProxy:
     """Proxy for remote objects. All operations are lazy until materialized."""
 
@@ -27,7 +37,7 @@ class RPCProxy:
             {"type": "getattr", "path": self._rpc_path, "obj_id": self._rpc_obj_id, "attr": name}
         )
         if response["type"] == "error":
-            raise RemoteException(response["error"], response.get("traceback"))
+            _raise_deserialized_error(response)
         return RPCProxy(path=new_path, obj_id=response["obj_id"])
 
     def __call__(self, *args, **kwargs):
@@ -36,14 +46,14 @@ class RPCProxy:
             {"type": "call", "path": self._rpc_path, "obj_id": self._rpc_obj_id, "args": args, "kwargs": kwargs}
         )
         if response["type"] == "error":
-            raise RemoteException(response["error"], response.get("traceback"))
+            _raise_deserialized_error(response)
         return RPCProxy(path=f"{self._rpc_path}()", obj_id=response["obj_id"])
 
     def __getitem__(self, key):
         """Indexing returns new proxy."""
         response = self._rpc_connection.send({"type": "getitem", "obj_id": self._rpc_obj_id, "key": key})
         if response["type"] == "error":
-            raise RemoteException(response["error"], response.get("traceback"))
+            _raise_deserialized_error(response)
         return RPCProxy(path=f"{self._rpc_path}[{key}]", obj_id=response["obj_id"])
 
     def __repr__(self):
@@ -52,16 +62,22 @@ class RPCProxy:
 
 
 class RemoteException(Exception):
-    """Exception raised on the server side."""
+    """Exception from remote server."""
 
-    def __init__(self, message: str, traceback: str | None = None):
+    def __init__(self, message: str, traceback: str | None = None, exception_type: str | None = None):
         super().__init__(message)
         self.remote_traceback = traceback
+        self.exception_type = exception_type
 
     def __str__(self):
         if self.remote_traceback:
             return f"{super().__str__()}\n\nRemote traceback:\n{self.remote_traceback}"
         return super().__str__()
+
+    def __repr__(self):
+        if self.exception_type:
+            return f"RemoteException({self.exception_type}: {super().__str__()})"
+        return f"RemoteException({super().__str__()})"
 
 
 def materialize(obj: Any) -> Any:
@@ -70,7 +86,7 @@ def materialize(obj: Any) -> Any:
         return obj
     response = obj._rpc_connection.send({"type": "materialize", "obj_id": obj._rpc_obj_id})
     if response["type"] == "error":
-        raise RemoteException(response["error"], response.get("traceback"))
+        _raise_deserialized_error(response)
     return response["value"]
 
 
