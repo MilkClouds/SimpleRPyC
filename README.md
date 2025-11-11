@@ -35,6 +35,9 @@ For example, robotics simulation environments like [SimplerEnv](https://github.c
 
 **[zero](https://github.com/Ananto30/zero)**: Promising msgspec+ZMQ stack, but doesn't support multiple arguments (`remote_fn(a, b, c)` fails) or proxy objects.
 
+<!-- TODO: pydantic support, add content for dataclasses-like types(already supported since we use msgpack) -->
+<!-- TODO: more practical demo, e.g. remote RL env demo -->
+
 ## Features
 
 - **WebSocket Transport**: Standard protocol, easy to debug, works through firewalls
