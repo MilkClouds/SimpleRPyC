@@ -77,6 +77,15 @@ class RPCServer:
             except OSError as e:
                 raise RuntimeError(f"Failed to bind to {self.host}:{self.port}") from e
 
+        print("=" * 70)
+        print("⚠️  SECURITY WARNING")
+        print("=" * 70)
+        print("This server uses UNENCRYPTED WebSocket (ws://) connections.")
+        print("Tokens and data are transmitted in PLAINTEXT.")
+        print("Only use in TRUSTED PRIVATE NETWORKS (localhost, private LAN, VPN).")
+        print("DO NOT expose to public internet!")
+        print("=" * 70)
+        print()
         print(f"Starting RPC server on {self.host}:{self.port}")
         print(f"Token: {self.token}")
         print("\nSet environment variable:")
