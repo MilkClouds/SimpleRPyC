@@ -1,7 +1,6 @@
 """Integration tests for simplerpc."""
 
 import asyncio
-import sys
 import threading
 import time
 
