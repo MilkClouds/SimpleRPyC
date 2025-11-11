@@ -1,0 +1,54 @@
+[project]
+name = "simplerpc"
+dynamic = ["version"]
+description = "Simple RPC client/server with websocket"
+readme = "README.md"
+authors = [
+    { name = "Suhwan Choi", email = "milkclouds00@gmail.com" }
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "websockets>=12.0",
+    "msgpack>=1.0.0",
+    "msgpack-numpy>=0.4.8",
+]
+
+
+[dependency-groups]
+dev = [
+    "ipython",
+    "pytest",
+    "pytest-cov",
+    "ruff>=0.3.0",
+]
+
+[tool.ruff]
+line-length = 119
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "simplerpc/_version.py"
