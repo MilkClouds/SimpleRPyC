@@ -24,6 +24,17 @@ Simple Remote Procedure Call over WebSocket with lazy evaluation and explicit ma
 - **Flexible API**: Module patching for import-style usage, or namespace access for explicit remote calls
 - **Advanced Features**: Remote code execution (`eval`, `execute`), function teleportation
 
+## ⚠️ Security Warning
+
+**SimpleRPC uses unencrypted WebSocket connections (`ws://`).** The authentication token and all data are transmitted in plaintext, making them vulnerable to network sniffing and man-in-the-middle attacks.
+
+**Use SimpleRPC only in trusted, private networks** (e.g., localhost, private LANs, VPNs). **DO NOT expose SimpleRPC servers to the public internet** or use it over untrusted networks.
+
+For production use over untrusted networks, consider:
+- Running SimpleRPC only on `localhost` and using SSH tunneling for remote access
+- Deploying within a private network or VPN
+- Adding TLS/SSL encryption layer (e.g., reverse proxy with nginx/caddy)
+
 ## Installation
 
 ```bash
