@@ -1,6 +1,5 @@
 """Client execution context."""
 
-import traceback
 from typing import Any
 
 
@@ -27,7 +26,9 @@ class ClientExecutor:
                 return handler()
             return {"type": "error", "error": f"Unknown message type: {msg['type']}"}
         except Exception as e:
-            return {"type": "error", "error": str(e), "traceback": traceback.format_exc()}
+            from simplerpc.common.serialization import serialize_exception
+
+            return {"type": "error", **serialize_exception(e)}
 
     def _import_module(self, module_name: str) -> dict:
         """Import module and return object ID."""

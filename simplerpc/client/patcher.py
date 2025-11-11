@@ -3,7 +3,7 @@
 import sys
 
 from simplerpc.client.connection import get_connection
-from simplerpc.client.proxy import RemoteException, RPCProxy
+from simplerpc.client.proxy import RPCProxy, _raise_deserialized_error
 
 # Track original modules
 _original_modules = {}
@@ -17,7 +17,7 @@ def patch_module(module_name: str) -> RPCProxy:
     # Request server to import module
     response = get_connection().send({"type": "import_module", "module": module_name})
     if response["type"] == "error":
-        raise RemoteException(response["error"], response.get("traceback"))
+        _raise_deserialized_error(response)
 
     # Create proxy for the module
     proxy = RPCProxy(path=module_name, obj_id=response["obj_id"])

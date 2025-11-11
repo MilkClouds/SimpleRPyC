@@ -75,7 +75,7 @@ class TestGetattr:
         executor = ClientExecutor()
 
         # First import os
-        import_response = executor._import_module("os")
+        import_response = executor._import_module("os")  # noqa: F841
 
         # Then get getcwd attribute
         response = executor._getattr("os", None, "getcwd")
@@ -338,10 +338,10 @@ class TestHandleMessage:
         """Test handling message that raises exception."""
         executor = ClientExecutor()
 
-        # Try to get item from non-existent object
         msg = {"type": "getitem", "obj_id": 999, "key": 0}
         response = executor.handle_message(msg)
 
         assert response["type"] == "error"
-        assert "error" in response
+        assert "exception_type" in response
+        assert "exception_message" in response
         assert "traceback" in response

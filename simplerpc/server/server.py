@@ -49,7 +49,7 @@ class RPCServer:
                 response_data = serialize(response)
                 await websocket.send(response_data)
 
-        except websockets.exceptions.ConnectionClosed:
+        except websockets.ConnectionClosed:
             pass
         finally:
             # Cleanup
