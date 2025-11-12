@@ -294,9 +294,10 @@ class TestServerErrors:
         """Test python -m simplerpyc.server entry point."""
         import signal
         import subprocess
+        import sys
 
         proc = subprocess.Popen(
-            ["python", "-m", "simplerpyc.server", "--port", "0"],
+            [sys.executable, "-m", "simplerpyc.server", "--port", "0"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
