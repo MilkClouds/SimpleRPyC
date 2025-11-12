@@ -14,102 +14,86 @@ from simplerpyc.server.server import RPCServer
 
 
 class TestNumpySerialization:
-    """Test numpy serialization/deserialization."""
+    """Test numpy serialization."""
 
-    def test_serialize_1d_array(self):
-        """Test serializing 1D numpy array."""
+    def test_1d_array(self):
+        """Test 1D array."""
         arr = np.array([1, 2, 3, 4, 5])
-        data = serialize(arr)
-        result = deserialize(data)
+        result = deserialize(serialize(arr))
         np.testing.assert_array_equal(result, arr)
         assert result.dtype == arr.dtype
 
-    def test_serialize_2d_array(self):
-        """Test serializing 2D numpy array."""
+    def test_2d_array(self):
+        """Test 2D array."""
         arr = np.array([[1, 2, 3], [4, 5, 6]])
-        data = serialize(arr)
-        result = deserialize(data)
+        result = deserialize(serialize(arr))
         np.testing.assert_array_equal(result, arr)
         assert result.shape == arr.shape
 
-    def test_serialize_3d_array(self):
-        """Test serializing 3D numpy array."""
+    def test_3d_array(self):
+        """Test 3D array."""
         arr = np.random.rand(3, 4, 5)
-        data = serialize(arr)
-        result = deserialize(data)
+        result = deserialize(serialize(arr))
         np.testing.assert_array_almost_equal(result, arr)
         assert result.shape == arr.shape
 
-    def test_serialize_float_array(self):
-        """Test serializing float array."""
+    def test_float_array(self):
+        """Test float array."""
         arr = np.array([1.1, 2.2, 3.3, 4.4], dtype=np.float32)
-        data = serialize(arr)
-        result = deserialize(data)
+        result = deserialize(serialize(arr))
         np.testing.assert_array_almost_equal(result, arr)
         assert result.dtype == arr.dtype
 
-    def test_serialize_int_array(self):
-        """Test serializing int array."""
+    def test_int_array(self):
+        """Test int array."""
         arr = np.array([1, 2, 3, 4], dtype=np.int64)
-        data = serialize(arr)
-        result = deserialize(data)
+        result = deserialize(serialize(arr))
         np.testing.assert_array_equal(result, arr)
         assert result.dtype == arr.dtype
 
-    def test_serialize_complex_array(self):
-        """Test serializing complex array."""
+    def test_complex_array(self):
+        """Test complex array."""
         arr = np.array([1 + 2j, 3 + 4j, 5 + 6j])
-        data = serialize(arr)
-        result = deserialize(data)
+        result = deserialize(serialize(arr))
         np.testing.assert_array_equal(result, arr)
         assert result.dtype == arr.dtype
 
-    def test_serialize_bool_array(self):
-        """Test serializing boolean array."""
+    def test_bool_array(self):
+        """Test bool array."""
         arr = np.array([True, False, True, False])
-        data = serialize(arr)
-        result = deserialize(data)
+        result = deserialize(serialize(arr))
         np.testing.assert_array_equal(result, arr)
         assert result.dtype == arr.dtype
 
-    def test_serialize_empty_array(self):
-        """Test serializing empty array."""
+    def test_empty_array(self):
+        """Test empty array."""
         arr = np.array([])
-        data = serialize(arr)
-        result = deserialize(data)
+        result = deserialize(serialize(arr))
         np.testing.assert_array_equal(result, arr)
 
-    def test_serialize_large_array(self):
-        """Test serializing large array."""
+    def test_large_array(self):
+        """Test large array."""
         arr = np.random.rand(1000, 1000)
-        data = serialize(arr)
-        result = deserialize(data)
+        result = deserialize(serialize(arr))
         np.testing.assert_array_almost_equal(result, arr)
         assert result.shape == arr.shape
 
-    def test_serialize_dict_with_numpy(self):
-        """Test serializing dict containing numpy arrays."""
+    def test_dict_with_numpy(self):
+        """Test dict with numpy."""
         data_dict = {
             "array1": np.array([1, 2, 3]),
             "array2": np.array([[4, 5], [6, 7]]),
             "scalar": 42,
         }
-        data = serialize(data_dict)
-        result = deserialize(data)
+        result = deserialize(serialize(data_dict))
         np.testing.assert_array_equal(result["array1"], data_dict["array1"])
         np.testing.assert_array_equal(result["array2"], data_dict["array2"])
         assert result["scalar"] == data_dict["scalar"]
 
-    def test_serialize_list_with_numpy(self):
-        """Test serializing list containing numpy arrays."""
-        data_list = [
-            np.array([1, 2, 3]),
-            np.array([4.5, 5.5]),
-            "string",
-            42,
-        ]
-        data = serialize(data_list)
-        result = deserialize(data)
+    def test_list_with_numpy(self):
+        """Test list with numpy."""
+        data_list = [np.array([1, 2, 3]), np.array([4.5, 5.5]), "string", 42]
+        result = deserialize(serialize(data_list))
         np.testing.assert_array_equal(result[0], data_list[0])
         np.testing.assert_array_equal(result[1], data_list[1])
         assert result[2] == data_list[2]
@@ -118,7 +102,7 @@ class TestNumpySerialization:
 
 @pytest.fixture
 def numpy_server():
-    """Start server for numpy integration tests."""
+    """Start server."""
     server = RPCServer(host="localhost", port=-1)
 
     def run_server():
@@ -132,152 +116,143 @@ def numpy_server():
 
 
 class TestNumpyIntegration:
-    """Integration tests for numpy operations over RPC."""
+    """Numpy integration tests."""
 
-    def test_numpy_array_creation(self, numpy_server):
-        """Test creating numpy arrays remotely."""
+    def test_array_creation(self, numpy_server):
+        """Test array creation."""
         import numpy as np_local
 
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
-
-        arr = materialize(np_remote.array([1, 2, 3, 4, 5]))
+        arr = materialize(conn.modules.numpy.array([1, 2, 3, 4, 5]))
 
         assert isinstance(arr, np_local.ndarray)
         assert np_local.array_equal(arr, np_local.array([1, 2, 3, 4, 5]))
 
-    def test_numpy_zeros(self, numpy_server):
-        """Test numpy.zeros over RPC."""
+    def test_zeros(self, numpy_server):
+        """Test zeros."""
         import numpy as np_local
 
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
-        arr = materialize(np_remote.zeros(10))
+        arr = materialize(conn.modules.numpy.zeros(10))
+
         assert isinstance(arr, np_local.ndarray)
         assert arr.shape == (10,)
         assert np_local.array_equal(arr, np_local.zeros(10))
 
-    def test_numpy_ones(self, numpy_server):
-        """Test numpy.ones over RPC."""
+    def test_ones(self, numpy_server):
+        """Test ones."""
         import numpy as np_local
 
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
-        arr = materialize(np_remote.ones((3, 4)))
+        arr = materialize(conn.modules.numpy.ones((3, 4)))
+
         assert isinstance(arr, np_local.ndarray)
         assert arr.shape == (3, 4)
         assert np_local.array_equal(arr, np_local.ones((3, 4)))
 
-    def test_numpy_arange(self, numpy_server):
-        """Test numpy.arange over RPC."""
+    def test_arange(self, numpy_server):
+        """Test arange."""
         import numpy as np_local
 
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
-        arr = materialize(np_remote.arange(0, 10, 2))
+        arr = materialize(conn.modules.numpy.arange(0, 10, 2))
+
         assert isinstance(arr, np_local.ndarray)
         assert np_local.array_equal(arr, np_local.arange(0, 10, 2))
 
-    def test_numpy_linspace(self, numpy_server):
-        """Test numpy.linspace over RPC."""
+    def test_linspace(self, numpy_server):
+        """Test linspace."""
         import numpy as np_local
 
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
-        arr = materialize(np_remote.linspace(0, 1, 11))
+        arr = materialize(conn.modules.numpy.linspace(0, 1, 11))
+
         assert isinstance(arr, np_local.ndarray)
         assert np_local.allclose(arr, np_local.linspace(0, 1, 11))
 
-    def test_numpy_reshape(self, numpy_server):
-        """Test numpy array reshaping over RPC."""
+    def test_reshape(self, numpy_server):
+        """Test reshape."""
         import numpy as np_local
 
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
-        arr = materialize(np_remote.arange(12).reshape(3, 4))
+        arr = materialize(conn.modules.numpy.arange(12).reshape(3, 4))
+
         assert isinstance(arr, np_local.ndarray)
         assert arr.shape == (3, 4)
         assert np_local.array_equal(arr, np_local.arange(12).reshape(3, 4))
 
-    def test_numpy_sum(self, numpy_server):
-        """Test numpy.sum over RPC."""
+    def test_sum(self, numpy_server):
+        """Test sum."""
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
-        result = materialize(np_remote.array([1, 2, 3, 4, 5]).sum())
+        result = materialize(conn.modules.numpy.array([1, 2, 3, 4, 5]).sum())
         assert result == 15
 
-    def test_numpy_mean(self, numpy_server):
-        """Test numpy.mean over RPC."""
+    def test_mean(self, numpy_server):
+        """Test mean."""
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
-        result = materialize(np_remote.array([1, 2, 3, 4, 5]).mean())
+        result = materialize(conn.modules.numpy.array([1, 2, 3, 4, 5]).mean())
         assert result == 3.0
 
-    def test_numpy_transpose(self, numpy_server):
-        """Test numpy array transpose over RPC."""
+    def test_transpose(self, numpy_server):
+        """Test transpose."""
         import numpy as np_local
 
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
-        result = materialize(np_remote.array([[1, 2, 3], [4, 5, 6]]).T)
+        result = materialize(conn.modules.numpy.array([[1, 2, 3], [4, 5, 6]]).T)
         expected = np_local.array([[1, 4], [2, 5], [3, 6]])
         assert np_local.array_equal(result, expected)
 
-    def test_numpy_indexing(self, numpy_server):
-        """Test numpy array indexing over RPC."""
+    def test_indexing(self, numpy_server):
+        """Test indexing."""
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
-        arr = np_remote.array([10, 20, 30, 40, 50])
-        result = materialize(arr[2])
-        assert result == 30
+        arr = conn.modules.numpy.array([10, 20, 30, 40, 50])
+        assert materialize(arr[2]) == 30
 
-    def test_numpy_dtype_preservation(self, numpy_server):
-        """Test that numpy dtypes are preserved over RPC."""
+    def test_dtype_preservation(self, numpy_server):
+        """Test dtype preservation."""
         import numpy as np_local
 
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
         np_remote = conn.modules.numpy
         int32_arr = materialize(np_remote.zeros(5, dtype="int32"))
         float64_arr = materialize(np_remote.ones(5, dtype="float64"))
+
         assert int32_arr.dtype == np_local.int32
         assert float64_arr.dtype == np_local.float64
 
-    def test_numpy_complex_operations(self, numpy_server):
-        """Test complex numpy operations over RPC."""
+    def test_complex_operations(self, numpy_server):
+        """Test complex operations."""
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
-        mean_val = materialize(np_remote.arange(20).reshape(4, 5).mean())
+        mean_val = materialize(conn.modules.numpy.arange(20).reshape(4, 5).mean())
         assert mean_val == 9.5
 
-    def test_numpy_large_array_transport(self, numpy_server):
-        """Test transporting large numpy arrays over RPC."""
+    def test_large_array_transport(self, numpy_server):
+        """Test large array transport."""
         import numpy as np_local
 
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
-        arr = materialize(np_remote.zeros((100, 100)))
+        arr = materialize(conn.modules.numpy.zeros((100, 100)))
+
         assert isinstance(arr, np_local.ndarray)
         assert arr.shape == (100, 100)
 
-    def test_numpy_proxy_as_argument(self, numpy_server):
-        """Test passing RPCProxy as argument to numpy functions."""
+    def test_proxy_as_argument(self, numpy_server):
+        """Test proxy as argument."""
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
         np_remote = conn.modules.numpy
         arr = np_remote.array([1, 2, 3, 4, 5])
-        result = materialize(np_remote.sum(arr))
-        assert result == 15
+        assert materialize(np_remote.sum(arr)) == 15
 
-    def test_numpy_multiple_proxy_arguments(self, numpy_server):
-        """Test passing multiple RPCProxy objects as arguments."""
+    def test_multiple_proxy_arguments(self, numpy_server):
+        """Test multiple proxy arguments."""
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
         np_remote = conn.modules.numpy
         a = np_remote.array([1, 2, 3])
         b = np_remote.array([4, 5, 6])
-        result = materialize(np_remote.dot(a, b))
-        assert result == 32
+        assert materialize(np_remote.dot(a, b)) == 32
 
-    def test_numpy_matrix_multiply_with_proxies(self, numpy_server):
-        """Test matrix multiplication with proxy arguments."""
+    def test_matrix_multiply(self, numpy_server):
+        """Test matrix multiply."""
         import numpy as np_local
 
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
@@ -288,13 +263,12 @@ class TestNumpyIntegration:
         expected = np_local.array([[19, 22], [43, 50]])
         assert np_local.array_equal(result, expected)
 
-    def test_numpy_slicing_with_slice_object(self, numpy_server):
-        """Test numpy array slicing with slice objects."""
+    def test_slicing(self, numpy_server):
+        """Test slicing."""
         import numpy as np_local
 
         conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
-        arr = np_remote.arange(12).reshape(3, 4)
+        arr = conn.modules.numpy.arange(12).reshape(3, 4)
         result = materialize(arr[0:2])
         expected = np_local.arange(12).reshape(3, 4)[0:2]
         assert np_local.array_equal(result, expected)

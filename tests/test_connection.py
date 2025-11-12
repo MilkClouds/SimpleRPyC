@@ -13,8 +13,9 @@ class TestConnection:
     """Test Connection class."""
 
     def test_init(self):
-        """Test Connection initialization."""
+        """Test initialization."""
         conn = Connection()
+
         assert conn.ws is None
         assert conn.loop is None
 
@@ -53,7 +54,7 @@ class TestConnection:
                 conn.connect("localhost", 8000)
 
     def test_connect_from_env_token(self, mock_websocket):
-        """Test connection uses token from environment."""
+        """Test connection uses environment token."""
         conn = Connection()
 
         async def mock_connect(*_args, **_kwargs):
@@ -65,11 +66,9 @@ class TestConnection:
 
                 assert conn.ws is mock_websocket
 
-    def test_send_message(self, mock_websocket):
-        """Test sending a message."""
+    def test_send(self, mock_websocket):
+        """Test send message."""
         conn = Connection()
-
-        # Mock the response
         response_data = serialize({"type": "success", "value": 42})
         mock_websocket.recv = AsyncMock(return_value=response_data)
 
@@ -80,14 +79,13 @@ class TestConnection:
             with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "test_token"}):
                 conn.connect("localhost", 8000)
 
-                message = {"type": "test", "data": "hello"}
-                result = conn.send(message)
+                result = conn.send({"type": "test", "data": "hello"})
 
                 assert result == {"type": "success", "value": 42}
                 mock_websocket.send.assert_called_once()
 
     def test_disconnect(self, mock_websocket):
-        """Test disconnecting."""
+        """Test disconnect."""
         conn = Connection()
 
         async def mock_connect(*_args, **_kwargs):
@@ -103,14 +101,14 @@ class TestConnection:
     def test_disconnect_when_not_connected(self):
         """Test disconnect when not connected."""
         conn = Connection()
-        conn.disconnect()  # Should not raise
+        conn.disconnect()
 
 
 class TestConnectFunction:
     """Test module-level connect function."""
 
     def test_connect_creates_connection(self, mock_websocket):
-        """Test connect function creates and configures connection."""
+        """Test connect function."""
 
         async def mock_connect(*_args, **_kwargs):
             return mock_websocket
@@ -118,11 +116,12 @@ class TestConnectFunction:
         with patch("websockets.connect", side_effect=mock_connect):
             with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "test_token"}):
                 conn = connect("localhost", 8000)
+
                 assert conn.ws is mock_websocket
                 assert isinstance(conn, Connection)
 
-    def test_connect_with_explicit_token(self, mock_websocket):
-        """Test connect with explicit token parameter."""
+    def test_connect_with_token(self, mock_websocket):
+        """Test connect with explicit token."""
 
         async def mock_connect(*_args, **_kwargs):
             return mock_websocket
@@ -131,23 +130,23 @@ class TestConnectFunction:
             conn = connect("localhost", 8000, token="my_token")
             assert conn.ws is mock_websocket
 
-    def test_connect_default_params(self, mock_websocket):
-        """Test connect with default parameters."""
+    def test_connect_defaults(self, mock_websocket):
+        """Test connect with defaults."""
 
         async def mock_connect(*_args, **_kwargs):
             return mock_websocket
 
         with patch("websockets.connect", side_effect=mock_connect):
             with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "test_token"}):
-                conn = connect()  # Uses defaults: localhost, 8000
+                conn = connect()
                 assert conn.ws is mock_websocket
 
 
 class TestConnectionIntegration:
-    """Integration tests for connection module."""
+    """Integration tests."""
 
-    def test_full_connection_lifecycle(self, mock_websocket):
-        """Test complete connection lifecycle."""
+    def test_full_lifecycle(self, mock_websocket):
+        """Test full connection lifecycle."""
         response_data = serialize({"type": "success", "obj_id": 1})
         mock_websocket.recv = AsyncMock(return_value=response_data)
 
@@ -158,11 +157,13 @@ class TestConnectionIntegration:
             with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "test_token"}):
                 conn = connect("localhost", 8000)
                 result = conn.send({"type": "test"})
+
                 assert result["type"] == "success"
+
                 conn.disconnect()
 
     def test_multiple_connections(self, mock_websocket):
-        """Test creating multiple independent connections."""
+        """Test multiple connections."""
 
         async def mock_connect(*_args, **_kwargs):
             return mock_websocket
@@ -171,10 +172,11 @@ class TestConnectionIntegration:
             with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "test_token"}):
                 conn1 = connect("localhost", 8000)
                 conn2 = connect("localhost", 8000)
+
                 assert conn1 is not conn2
 
-    def test_send_multiple_messages(self, mock_websocket):
-        """Test sending multiple messages in sequence."""
+    def test_multiple_messages(self, mock_websocket):
+        """Test sending multiple messages."""
         responses = [
             serialize({"type": "success", "obj_id": 1}),
             serialize({"type": "success", "obj_id": 2}),
@@ -191,6 +193,7 @@ class TestConnectionIntegration:
                 result1 = conn.send({"type": "test1"})
                 result2 = conn.send({"type": "test2"})
                 result3 = conn.send({"type": "test3"})
+
                 assert result1["obj_id"] == 1
                 assert result2["obj_id"] == 2
                 assert result3["obj_id"] == 3
