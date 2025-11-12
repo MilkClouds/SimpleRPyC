@@ -63,8 +63,9 @@ class Connection:
                 raise ValueError("Token must be provided or set in SIMPLERPYC_TOKEN env var")
 
         try:
-            self.loop = asyncio.get_event_loop()
+            self.loop = asyncio.get_running_loop()
         except RuntimeError:
+            # No running loop, create a new one
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
 
