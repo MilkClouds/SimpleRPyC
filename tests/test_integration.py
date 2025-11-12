@@ -254,6 +254,46 @@ class TestServerErrors:
             # Should not raise, should handle gracefully
             server.run()
 
+    def test_cancelled_error_shutdown(self):
+        """Test graceful shutdown on asyncio.CancelledError."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        server = RPCServer(host="localhost", port=0)
+
+        async def test_cancellation():
+            # Mock websockets.serve to return a mock server
+            mock_server = MagicMock()
+            mock_socket = MagicMock()
+            mock_socket.getsockname.return_value = ("localhost", 12345)
+            mock_server.sockets = [mock_socket]
+            mock_server.close = MagicMock()
+            mock_server.wait_closed = AsyncMock()
+
+            async def mock_serve(*_args, **_kwargs):
+                return mock_server
+
+            with patch("websockets.serve", side_effect=mock_serve):
+                # Create a task that will be cancelled
+                serve_task = asyncio.create_task(server.serve())
+
+                # Give it a moment to start
+                await asyncio.sleep(0.1)
+
+                # Cancel the task
+                serve_task.cancel()
+
+                # Wait for cancellation to complete
+                try:
+                    await serve_task
+                except asyncio.CancelledError:
+                    pass
+
+                # Verify cleanup was called
+                mock_server.close.assert_called_once()
+                mock_server.wait_closed.assert_called_once()
+
+        asyncio.run(test_cancellation())
+
     def test_main_function(self):
         """Test main() function."""
         from unittest.mock import patch
