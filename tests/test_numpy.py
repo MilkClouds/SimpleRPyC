@@ -115,160 +115,152 @@ def numpy_server():
     yield server
 
 
+@pytest.fixture
+def numpy_conn(numpy_server):
+    """Create connection to numpy server."""
+    conn = connect("localhost", numpy_server.port, token=numpy_server.token)
+    yield conn
+    conn.unpatch_all()
+    conn.disconnect()
+
+
 class TestNumpyIntegration:
     """Numpy integration tests."""
 
-    def test_array_creation(self, numpy_server):
+    def test_array_creation(self, numpy_conn):
         """Test array creation."""
         import numpy as np_local
 
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        arr = materialize(conn.modules.numpy.array([1, 2, 3, 4, 5]))
+        arr = materialize(numpy_conn.modules.numpy.array([1, 2, 3, 4, 5]))
 
         assert isinstance(arr, np_local.ndarray)
         assert np_local.array_equal(arr, np_local.array([1, 2, 3, 4, 5]))
 
-    def test_zeros(self, numpy_server):
+    def test_zeros(self, numpy_conn):
         """Test zeros."""
         import numpy as np_local
 
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        arr = materialize(conn.modules.numpy.zeros(10))
+        arr = materialize(numpy_conn.modules.numpy.zeros(10))
 
         assert isinstance(arr, np_local.ndarray)
         assert arr.shape == (10,)
         assert np_local.array_equal(arr, np_local.zeros(10))
 
-    def test_ones(self, numpy_server):
+    def test_ones(self, numpy_conn):
         """Test ones."""
         import numpy as np_local
 
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        arr = materialize(conn.modules.numpy.ones((3, 4)))
+        arr = materialize(numpy_conn.modules.numpy.ones((3, 4)))
 
         assert isinstance(arr, np_local.ndarray)
         assert arr.shape == (3, 4)
         assert np_local.array_equal(arr, np_local.ones((3, 4)))
 
-    def test_arange(self, numpy_server):
+    def test_arange(self, numpy_conn):
         """Test arange."""
         import numpy as np_local
 
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        arr = materialize(conn.modules.numpy.arange(0, 10, 2))
+        arr = materialize(numpy_conn.modules.numpy.arange(0, 10, 2))
 
         assert isinstance(arr, np_local.ndarray)
         assert np_local.array_equal(arr, np_local.arange(0, 10, 2))
 
-    def test_linspace(self, numpy_server):
+    def test_linspace(self, numpy_conn):
         """Test linspace."""
         import numpy as np_local
 
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        arr = materialize(conn.modules.numpy.linspace(0, 1, 11))
+        arr = materialize(numpy_conn.modules.numpy.linspace(0, 1, 11))
 
         assert isinstance(arr, np_local.ndarray)
         assert np_local.allclose(arr, np_local.linspace(0, 1, 11))
 
-    def test_reshape(self, numpy_server):
+    def test_reshape(self, numpy_conn):
         """Test reshape."""
         import numpy as np_local
 
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        arr = materialize(conn.modules.numpy.arange(12).reshape(3, 4))
+        arr = materialize(numpy_conn.modules.numpy.arange(12).reshape(3, 4))
 
         assert isinstance(arr, np_local.ndarray)
         assert arr.shape == (3, 4)
         assert np_local.array_equal(arr, np_local.arange(12).reshape(3, 4))
 
-    def test_sum(self, numpy_server):
+    def test_sum(self, numpy_conn):
         """Test sum."""
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        result = materialize(conn.modules.numpy.array([1, 2, 3, 4, 5]).sum())
+        result = materialize(numpy_conn.modules.numpy.array([1, 2, 3, 4, 5]).sum())
         assert result == 15
 
-    def test_mean(self, numpy_server):
+    def test_mean(self, numpy_conn):
         """Test mean."""
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        result = materialize(conn.modules.numpy.array([1, 2, 3, 4, 5]).mean())
+        result = materialize(numpy_conn.modules.numpy.array([1, 2, 3, 4, 5]).mean())
         assert result == 3.0
 
-    def test_transpose(self, numpy_server):
+    def test_transpose(self, numpy_conn):
         """Test transpose."""
         import numpy as np_local
 
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        result = materialize(conn.modules.numpy.array([[1, 2, 3], [4, 5, 6]]).T)
+        result = materialize(numpy_conn.modules.numpy.array([[1, 2, 3], [4, 5, 6]]).T)
         expected = np_local.array([[1, 4], [2, 5], [3, 6]])
         assert np_local.array_equal(result, expected)
 
-    def test_indexing(self, numpy_server):
+    def test_indexing(self, numpy_conn):
         """Test indexing."""
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        arr = conn.modules.numpy.array([10, 20, 30, 40, 50])
+        arr = numpy_conn.modules.numpy.array([10, 20, 30, 40, 50])
         assert materialize(arr[2]) == 30
 
-    def test_dtype_preservation(self, numpy_server):
+    def test_dtype_preservation(self, numpy_conn):
         """Test dtype preservation."""
         import numpy as np_local
 
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
+        np_remote = numpy_conn.modules.numpy
         int32_arr = materialize(np_remote.zeros(5, dtype="int32"))
         float64_arr = materialize(np_remote.ones(5, dtype="float64"))
 
         assert int32_arr.dtype == np_local.int32
         assert float64_arr.dtype == np_local.float64
 
-    def test_complex_operations(self, numpy_server):
+    def test_complex_operations(self, numpy_conn):
         """Test complex operations."""
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        mean_val = materialize(conn.modules.numpy.arange(20).reshape(4, 5).mean())
+        mean_val = materialize(numpy_conn.modules.numpy.arange(20).reshape(4, 5).mean())
         assert mean_val == 9.5
 
-    def test_large_array_transport(self, numpy_server):
+    def test_large_array_transport(self, numpy_conn):
         """Test large array transport."""
         import numpy as np_local
 
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        arr = materialize(conn.modules.numpy.zeros((100, 100)))
+        arr = materialize(numpy_conn.modules.numpy.zeros((100, 100)))
 
         assert isinstance(arr, np_local.ndarray)
         assert arr.shape == (100, 100)
 
-    def test_proxy_as_argument(self, numpy_server):
+    def test_proxy_as_argument(self, numpy_conn):
         """Test proxy as argument."""
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
+        np_remote = numpy_conn.modules.numpy
         arr = np_remote.array([1, 2, 3, 4, 5])
         assert materialize(np_remote.sum(arr)) == 15
 
-    def test_multiple_proxy_arguments(self, numpy_server):
+    def test_multiple_proxy_arguments(self, numpy_conn):
         """Test multiple proxy arguments."""
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
+        np_remote = numpy_conn.modules.numpy
         a = np_remote.array([1, 2, 3])
         b = np_remote.array([4, 5, 6])
         assert materialize(np_remote.dot(a, b)) == 32
 
-    def test_matrix_multiply(self, numpy_server):
+    def test_matrix_multiply(self, numpy_conn):
         """Test matrix multiply."""
         import numpy as np_local
 
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        np_remote = conn.modules.numpy
+        np_remote = numpy_conn.modules.numpy
         a = np_remote.array([[1, 2], [3, 4]])
         b = np_remote.array([[5, 6], [7, 8]])
         result = materialize(np_remote.matmul(a, b))
         expected = np_local.array([[19, 22], [43, 50]])
         assert np_local.array_equal(result, expected)
 
-    def test_slicing(self, numpy_server):
+    def test_slicing(self, numpy_conn):
         """Test slicing."""
         import numpy as np_local
 
-        conn = connect("localhost", numpy_server.port, token=numpy_server.token)
-        arr = conn.modules.numpy.arange(12).reshape(3, 4)
+        arr = numpy_conn.modules.numpy.arange(12).reshape(3, 4)
         result = materialize(arr[0:2])
         expected = np_local.arange(12).reshape(3, 4)[0:2]
         assert np_local.array_equal(result, expected)
