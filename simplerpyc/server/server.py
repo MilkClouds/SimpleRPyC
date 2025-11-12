@@ -13,12 +13,12 @@ from simplerpyc.server.executor import ClientExecutor
 class RPCServer:
     """WebSocket-based RPC server."""
 
-    def __init__(self, host: str = "localhost", port: int = -1):
+    def __init__(self, host: str = "localhost", port: int = 0):
         """Initialize RPC server.
 
         Args:
             host: Host to bind to
-            port: Port to bind to (-1 for auto)
+            port: Port to bind to (0 for auto)
         """
         self.host = host
         self.port = port
@@ -64,24 +64,12 @@ class RPCServer:
 
     async def serve(self):
         """Start server."""
-        # Auto-seek port if port=-1
-        if self.port == -1:
-            port = 8000
-            while True:
-                try:
-                    self.server = await websockets.serve(self.handler, self.host, port)
-                    self.port = port
-                    break
-                except OSError:
-                    port += 1
-                    if port > 9000:
-                        raise RuntimeError("No available port found between 8000-9000")
-        else:
-            # Use specified port, panic if fails
-            try:
-                self.server = await websockets.serve(self.handler, self.host, self.port)
-            except OSError as e:
-                raise RuntimeError(f"Failed to bind to {self.host}:{self.port}") from e
+        try:
+            self.server = await websockets.serve(self.handler, self.host, self.port)
+            # Get the actual assigned port from the server socket (important when port=0)
+            self.port = next(iter(self.server.sockets)).getsockname()[1]
+        except OSError as e:
+            raise RuntimeError(f"Failed to bind to {self.host}:{self.port}") from e
 
         print("=" * 70)
         print("⚠️  SECURITY WARNING")
@@ -116,7 +104,7 @@ def main():
     parser = argparse.ArgumentParser(description="SimpleRPyC Server")
     parser.add_argument("--host", default=os.environ.get("SIMPLERPYC_HOST", "localhost"), help="Host to bind to")
     parser.add_argument(
-        "--port", type=int, default=int(os.environ.get("SIMPLERPYC_PORT", "-1")), help="Port to bind to (-1 for auto)"
+        "--port", type=int, default=int(os.environ.get("SIMPLERPYC_PORT", "0")), help="Port to bind to (0 for auto)"
     )
 
     args = parser.parse_args()

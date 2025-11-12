@@ -14,7 +14,7 @@ from simplerpyc.server.server import RPCServer
 @pytest.fixture
 def server():
     """Start server."""
-    server = RPCServer(host="localhost", port=-1)
+    server = RPCServer(host="localhost", port=0)
 
     def run_server():
         asyncio.run(server.serve())
@@ -157,7 +157,7 @@ class TestServerErrors:
         """Test connection with invalid token."""
         import websockets
 
-        server = RPCServer(host="localhost", port=-1)
+        server = RPCServer(host="localhost", port=0)
 
         def run_server():
             asyncio.run(server.serve())
@@ -174,17 +174,17 @@ class TestServerErrors:
 
         asyncio.run(test_invalid())
 
-    def test_port_exhaustion(self):
-        """Test port exhaustion error."""
+    def test_auto_port_assignment(self):
+        """Test automatic port assignment with port=0."""
         from unittest.mock import patch
 
-        server = RPCServer(host="localhost", port=-1)
+        server = RPCServer(host="localhost", port=0)
 
         async def mock_serve_fail(*args, **kwargs):
             raise OSError("Port in use")
 
         with patch("websockets.serve", side_effect=mock_serve_fail):
-            with pytest.raises(RuntimeError, match="No available port found"):
+            with pytest.raises(RuntimeError, match="Failed to bind to localhost:0"):
                 asyncio.run(server.serve())
 
     def test_specific_port_failure(self):
@@ -276,7 +276,7 @@ class TestServerErrors:
                 with patch.object(mock_server, "run") as mock_run:
                     main()
 
-                    mock_server_class.assert_called_once_with("localhost", -1)
+                    mock_server_class.assert_called_once_with("localhost", 0)
                     mock_run.assert_called_once()
 
     def test_main_module_entry_point(self):

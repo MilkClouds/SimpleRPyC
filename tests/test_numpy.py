@@ -103,7 +103,7 @@ class TestNumpySerialization:
 @pytest.fixture
 def numpy_server():
     """Start server."""
-    server = RPCServer(host="localhost", port=-1)
+    server = RPCServer(host="localhost", port=0)
 
     def run_server():
         asyncio.run(server.serve())
