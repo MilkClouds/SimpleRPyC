@@ -21,7 +21,7 @@ m.patch()
 - on client, for every time "patched remote module" must be called, request command to server. on server, execute commands from client directly with `exec`. manages `globals()` per client.
 
 server side:
-`python -m simplerpyc.serve`
+`python -m simplerpyc.server`
 
 client side:
 ```diff
