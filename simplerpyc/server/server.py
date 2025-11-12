@@ -89,11 +89,21 @@ class RPCServer:
         print("\nOr connect with:")
         print(f"  simplerpyc.connect('{self.host}', {self.port}, token='{self.token}')")
 
-        await asyncio.Future()  # Run forever
+        # Wait forever (until cancelled)
+        try:
+            await asyncio.Future()
+        except asyncio.CancelledError:
+            print("\nShutting down server...")
+            self.server.close()
+            await self.server.wait_closed()
+            print("Server stopped.")
 
     def run(self):
         """Run server (blocking)."""
-        asyncio.run(self.serve())
+        try:
+            asyncio.run(self.serve())
+        except KeyboardInterrupt:
+            pass  # Graceful shutdown handled in serve()
 
 
 def main():

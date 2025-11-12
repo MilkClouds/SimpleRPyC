@@ -243,6 +243,17 @@ class TestServerErrors:
             # Verify it was called with server.serve() result
             assert mock_asyncio_run.call_count == 1
 
+    def test_graceful_shutdown(self):
+        """Test graceful shutdown on KeyboardInterrupt."""
+        from unittest.mock import patch
+
+        server = RPCServer(host="localhost", port=8765)
+
+        # Mock asyncio.run to raise KeyboardInterrupt
+        with patch("asyncio.run", side_effect=KeyboardInterrupt):
+            # Should not raise, should handle gracefully
+            server.run()
+
     def test_main_function(self):
         """Test main() function."""
         from unittest.mock import patch
