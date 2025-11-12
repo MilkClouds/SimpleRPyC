@@ -194,10 +194,10 @@ class TestIsProxy:
         proxy = RPCProxy(connection=mock_connection)
         assert is_proxy(proxy) is True
 
-    def test_non_proxy(self):
+    @pytest.mark.parametrize("obj", ["string", 123, [1, 2, 3], {"key": "value"}, None])
+    def test_non_proxy(self, obj):
         """Test non-proxy returns False."""
-        for obj in ["string", 123, [1, 2, 3], {"key": "value"}, None]:
-            assert is_proxy(obj) is False
+        assert is_proxy(obj) is False
 
 
 class TestProxyChaining:

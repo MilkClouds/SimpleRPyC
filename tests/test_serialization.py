@@ -3,6 +3,7 @@
 from unittest.mock import patch
 
 import numpy as np
+import pytest
 
 from simplerpyc.common.serialization import deserialize, deserialize_exception, serialize, serialize_exception
 
@@ -41,10 +42,10 @@ class TestSerialization:
         """Test None."""
         assert deserialize(serialize(None)) is None
 
-    def test_bool(self):
+    @pytest.mark.parametrize("value", [True, False])
+    def test_bool(self, value):
         """Test bool."""
-        for value in [True, False]:
-            assert deserialize(serialize(value)) == value
+        assert deserialize(serialize(value)) == value
 
     def test_tuple(self):
         """Test tuple (converts to list)."""
@@ -83,12 +84,12 @@ class TestSerialization:
         """Test serialize returns bytes."""
         assert isinstance(serialize("test"), bytes)
 
-    def test_type_preservation(self):
+    @pytest.mark.parametrize("original", [42, 3.14, "string", [1, 2, 3], {"key": "value"}, True, False, None])
+    def test_type_preservation(self, original):
         """Test type preservation."""
-        for original in [42, 3.14, "string", [1, 2, 3], {"key": "value"}, True, False, None]:
-            deserialized = deserialize(serialize(original))
-            assert deserialized == original
-            assert type(deserialized) is type(original)
+        deserialized = deserialize(serialize(original))
+        assert deserialized == original
+        assert type(deserialized) is type(original)
 
 
 class TestExceptionSerialization:
