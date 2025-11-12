@@ -289,6 +289,12 @@ simplerpyc/
 - WebSocket concurrency issues with nested asyncio event loops in synchronous RPC context
 - `nest_asyncio` compatibility issues causing `ConcurrencyError` in websockets
 
+**Dependencies** (automatically installed with `pip install simplerpyc`):
+- `websockets>=12.0` - WebSocket transport layer (v12.0+ for improved async support)
+- `msgpack>=1.0.0` - Efficient binary serialization
+- `msgpack-numpy>=0.4.8` - NumPy array serialization with cross-version compatibility (1.x ↔ 2.x)
+- `dill>=0.3.0` - Function serialization for `conn.teleport()`
+
 ## License
 
 MIT
