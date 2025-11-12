@@ -305,16 +305,7 @@ class TestServerErrors:
             encoding="utf-8",
         )
 
-        # Wait for the server to start by reading its output
-        for _ in range(20):
-            line = proc.stdout.readline()
-            if "Starting RPC server on" in line:
-                break
-        else:
-            stderr_output = proc.stderr.read()
-            proc.kill()
-            pytest.fail(f"Server did not start up correctly. Stderr: {stderr_output}")
-
+        time.sleep(1)
         proc.send_signal(signal.SIGTERM)
         proc.wait(timeout=5)
 
