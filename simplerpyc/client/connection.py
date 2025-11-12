@@ -63,8 +63,9 @@ class Connection:
                 raise ValueError("Token must be provided or set in SIMPLERPYC_TOKEN env var")
 
         try:
-            self.loop = asyncio.get_event_loop()
+            self.loop = asyncio.get_running_loop()
         except RuntimeError:
+            # No running loop, create a new one
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self.loop)
 
@@ -168,8 +169,19 @@ class Connection:
             self.loop.run_until_complete(_disconnect())
 
 
-def connect(host: str = "localhost", port: int = 8000, token: str | None = None) -> Connection:
-    """Connect to RPC server and return connection object."""
+def connect(host: str | None = None, port: int | None = None, token: str | None = None) -> Connection:
+    """Connect to RPC server and return connection object.
+
+    Args:
+        host: Server host (defaults to SIMPLERPYC_HOST env var or "localhost")
+        port: Server port (defaults to SIMPLERPYC_PORT env var or 8000)
+        token: Authentication token (defaults to SIMPLERPYC_TOKEN env var)
+    """
+    if host is None:
+        host = os.environ.get("SIMPLERPYC_HOST", "localhost")
+    if port is None:
+        port = int(os.environ.get("SIMPLERPYC_PORT", "8000"))
+
     conn = Connection()
     conn.connect(host, port, token)
     return conn
