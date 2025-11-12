@@ -1,4 +1,4 @@
-"""Integration tests for simplerpc."""
+"""Integration tests for simplerpyc."""
 
 import asyncio
 import threading
@@ -6,9 +6,9 @@ import time
 
 import pytest
 
-from simplerpc.client.connection import connect
-from simplerpc.client.proxy import is_proxy, materialize
-from simplerpc.server.server import RPCServer
+from simplerpyc.client.connection import connect
+from simplerpyc.client.proxy import is_proxy, materialize
+from simplerpyc.server.server import RPCServer
 
 
 @pytest.fixture
@@ -131,7 +131,7 @@ class TestErrorHandling:
         """Test AttributeError propagation."""
         remote_os = conn.modules.os
 
-        from simplerpc.client.proxy import RemoteException
+        from simplerpyc.client.proxy import RemoteException
 
         with pytest.raises(RemoteException) as exc_info:
             materialize(remote_os.nonexistent_attribute)
@@ -141,7 +141,7 @@ class TestErrorHandling:
 
     def test_import_error(self, conn):
         """Test ImportError propagation."""
-        from simplerpc.client.proxy import RemoteException
+        from simplerpyc.client.proxy import RemoteException
 
         with pytest.raises(RemoteException) as exc_info:
             conn.modules.nonexistent_module_xyz

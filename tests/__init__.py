@@ -1,1 +1,1 @@
-"""Tests for simplerpc."""
+"""Tests for simplerpyc."""

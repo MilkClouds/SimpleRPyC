@@ -1,8 +1,8 @@
-"""Tests for simplerpc.server.executor module."""
+"""Tests for simplerpyc.server.executor module."""
 
 from unittest.mock import Mock
 
-from simplerpc.server.executor import ClientExecutor
+from simplerpyc.server.executor import ClientExecutor
 
 
 class TestClientExecutor:

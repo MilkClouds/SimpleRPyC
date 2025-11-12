@@ -1,12 +1,12 @@
-"""Tests for simplerpc.client.connection module."""
+"""Tests for simplerpyc.client.connection module."""
 
 import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from simplerpc.client.connection import Connection, connect
-from simplerpc.common.serialization import serialize
+from simplerpyc.client.connection import Connection, connect
+from simplerpyc.common.serialization import serialize
 
 
 class TestConnection:
@@ -26,7 +26,7 @@ class TestConnection:
             return mock_websocket
 
         with patch("websockets.connect", side_effect=mock_connect):
-            with patch.dict(os.environ, {"SIMPLERPC_TOKEN": "test_token"}):
+            with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "test_token"}):
                 conn.connect("localhost", 8000)
 
                 assert conn.ws is mock_websocket
@@ -60,7 +60,7 @@ class TestConnection:
             return mock_websocket
 
         with patch("websockets.connect", side_effect=mock_connect):
-            with patch.dict(os.environ, {"SIMPLERPC_TOKEN": "env_token"}):
+            with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "env_token"}):
                 conn.connect("localhost", 8000)
 
                 assert conn.ws is mock_websocket
@@ -77,7 +77,7 @@ class TestConnection:
             return mock_websocket
 
         with patch("websockets.connect", side_effect=mock_connect):
-            with patch.dict(os.environ, {"SIMPLERPC_TOKEN": "test_token"}):
+            with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "test_token"}):
                 conn.connect("localhost", 8000)
 
                 message = {"type": "test", "data": "hello"}
@@ -94,7 +94,7 @@ class TestConnection:
             return mock_websocket
 
         with patch("websockets.connect", side_effect=mock_connect):
-            with patch.dict(os.environ, {"SIMPLERPC_TOKEN": "test_token"}):
+            with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "test_token"}):
                 conn.connect("localhost", 8000)
                 conn.disconnect()
 
@@ -116,7 +116,7 @@ class TestConnectFunction:
             return mock_websocket
 
         with patch("websockets.connect", side_effect=mock_connect):
-            with patch.dict(os.environ, {"SIMPLERPC_TOKEN": "test_token"}):
+            with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "test_token"}):
                 conn = connect("localhost", 8000)
                 assert conn.ws is mock_websocket
                 assert isinstance(conn, Connection)
@@ -138,7 +138,7 @@ class TestConnectFunction:
             return mock_websocket
 
         with patch("websockets.connect", side_effect=mock_connect):
-            with patch.dict(os.environ, {"SIMPLERPC_TOKEN": "test_token"}):
+            with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "test_token"}):
                 conn = connect()  # Uses defaults: localhost, 8000
                 assert conn.ws is mock_websocket
 
@@ -155,7 +155,7 @@ class TestConnectionIntegration:
             return mock_websocket
 
         with patch("websockets.connect", side_effect=mock_connect):
-            with patch.dict(os.environ, {"SIMPLERPC_TOKEN": "test_token"}):
+            with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "test_token"}):
                 conn = connect("localhost", 8000)
                 result = conn.send({"type": "test"})
                 assert result["type"] == "success"
@@ -168,7 +168,7 @@ class TestConnectionIntegration:
             return mock_websocket
 
         with patch("websockets.connect", side_effect=mock_connect):
-            with patch.dict(os.environ, {"SIMPLERPC_TOKEN": "test_token"}):
+            with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "test_token"}):
                 conn1 = connect("localhost", 8000)
                 conn2 = connect("localhost", 8000)
                 assert conn1 is not conn2
@@ -186,7 +186,7 @@ class TestConnectionIntegration:
             return mock_websocket
 
         with patch("websockets.connect", side_effect=mock_connect):
-            with patch.dict(os.environ, {"SIMPLERPC_TOKEN": "test_token"}):
+            with patch.dict(os.environ, {"SIMPLERPYC_TOKEN": "test_token"}):
                 conn = connect("localhost", 8000)
                 result1 = conn.send({"type": "test1"})
                 result2 = conn.send({"type": "test2"})

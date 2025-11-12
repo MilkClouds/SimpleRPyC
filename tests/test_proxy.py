@@ -1,8 +1,8 @@
-"""Tests for simplerpc.client.proxy module."""
+"""Tests for simplerpyc.client.proxy module."""
 
 import pytest
 
-from simplerpc.client.proxy import RemoteException, RPCProxy, is_proxy, materialize
+from simplerpyc.client.proxy import RemoteException, RPCProxy, is_proxy, materialize
 
 
 class TestRPCProxy:

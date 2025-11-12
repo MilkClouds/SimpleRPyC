@@ -6,8 +6,8 @@ from urllib.parse import parse_qs, urlparse
 
 import websockets
 
-from simplerpc.common.serialization import deserialize, serialize
-from simplerpc.server.executor import ClientExecutor
+from simplerpyc.common.serialization import deserialize, serialize
+from simplerpyc.server.executor import ClientExecutor
 
 
 class RPCServer:
@@ -95,9 +95,9 @@ class RPCServer:
         print(f"Starting RPC server on {self.host}:{self.port}")
         print(f"Token: {self.token}")
         print("\nSet environment variable:")
-        print(f"  export SIMPLERPC_TOKEN='{self.token}'")
+        print(f"  export SIMPLERPYC_TOKEN='{self.token}'")
         print("\nOr connect with:")
-        print(f"  simplerpc.connect('{self.host}', {self.port}, token='{self.token}')")
+        print(f"  simplerpyc.connect('{self.host}', {self.port}, token='{self.token}')")
 
         await asyncio.Future()  # Run forever
 
@@ -107,10 +107,10 @@ class RPCServer:
 
 
 def main():
-    """Entry point for python -m simplerpc.server."""
+    """Entry point for python -m simplerpyc.server."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="SimpleRPC Server")
+    parser = argparse.ArgumentParser(description="SimpleRPyC Server")
     parser.add_argument("--host", default="localhost", help="Host to bind to")
     parser.add_argument("--port", type=int, default=-1, help="Port to bind to (-1 for auto)")
 

@@ -5,7 +5,7 @@ from typing import Any
 
 def _raise_deserialized_error(response: dict):
     """Deserialize and raise error."""
-    from simplerpc.common.serialization import deserialize_exception
+    from simplerpyc.common.serialization import deserialize_exception
 
     exc, cause = deserialize_exception(response)
     if cause:

@@ -51,4 +51,4 @@ build-backend = "hatchling.build"
 source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
-version-file = "simplerpc/_version.py"
+version-file = "simplerpyc/_version.py"

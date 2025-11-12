@@ -1,7 +1,7 @@
 # SimpleRPyC
 
-[![CI](https://github.com/milkclouds/simplerpc/actions/workflows/ci.yml/badge.svg)](https://github.com/milkclouds/simplerpc/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/milkclouds/simplerpc/branch/main/graph/badge.svg)](https://codecov.io/gh/milkclouds/simplerpc)
+[![CI](https://github.com/milkclouds/simplerpyc/actions/workflows/ci.yml/badge.svg)](https://github.com/milkclouds/simplerpyc/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/milkclouds/simplerpyc/branch/main/graph/badge.svg)](https://codecov.io/gh/milkclouds/simplerpyc)
 [![pypi](https://img.shields.io/pypi/v/simplerpyc.svg)](https://pypi.python.org/pypi/simplerpyc)
 [![Python Versions](https://img.shields.io/pypi/pyversions/simplerpyc.svg)](https://pypi.org/project/simplerpyc/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -72,12 +72,12 @@ pip install simplerpyc
 ### 1. Start the Server
 
 ```bash
-python -m simplerpc.server
+python -m simplerpyc.server
 ```
 
 The server will print a token. Set it as environment variable:
 ```bash
-export SIMPLERPC_TOKEN='<TOKEN_FROM_SERVER>'
+export SIMPLERPYC_TOKEN='<TOKEN_FROM_SERVER>'
 ```
 
 ### 2. Use the Client
@@ -87,15 +87,15 @@ SimpleRPyC provides two API styles - choose what fits your use case:
 #### Style 1: Module Patching (Import-like)
 
 ```python
-import simplerpc
-from simplerpc import materialize
+import simplerpyc
+from simplerpyc import materialize
 
 # Connect to server
-conn = simplerpc.connect("localhost", 8000)
+conn = simplerpyc.connect("localhost", 8000)
 
 # Patch modules to use remote versions
-simplerpc.patch_module(conn, "os")
-simplerpc.patch_module(conn, "numpy")
+simplerpyc.patch_module(conn, "os")
+simplerpyc.patch_module(conn, "numpy")
 
 # Import and use as if they were local
 import os
@@ -110,7 +110,7 @@ conn.disconnect()
 #### Style 2: Explicit Remote Access
 
 ```python
-from simplerpc import connect, materialize
+from simplerpyc import connect, materialize
 
 # Connect to server
 conn = connect("localhost", 8000)
@@ -174,19 +174,19 @@ obs, reward, done, truncated, info = materialize(env.step(action))  # actual val
 ### Connection
 
 ```python
-from simplerpc import connect
+from simplerpyc import connect
 
 conn = connect(host="localhost", port=8000, token=None)
-# Token auto-detected from SIMPLERPC_TOKEN env var if not provided
+# Token auto-detected from SIMPLERPYC_TOKEN env var if not provided
 ```
 
 ### Basic API
 
 **Module Patching:**
 ```python
-import simplerpc
+import simplerpyc
 
-simplerpc.patch_module(conn, "os")      # Patch sys.modules
+simplerpyc.patch_module(conn, "os")      # Patch sys.modules
 import os                                # Now uses remote version
 ```
 
@@ -198,7 +198,7 @@ remote_len = conn.builtins.len          # Access remote builtin
 
 **Utility Functions:**
 ```python
-from simplerpc import materialize, is_proxy
+from simplerpyc import materialize, is_proxy
 
 value = materialize(proxy)              # Convert proxy to actual value
 is_remote = is_proxy(obj)               # Check if object is a proxy
@@ -234,12 +234,12 @@ conn.disconnect()                         # Close connection
 ## Server
 
 ```bash
-python -m simplerpc.server [--host HOST] [--port PORT]
+python -m simplerpyc.server [--host HOST] [--port PORT]
 ```
 
 The server will print a token. Set it as environment variable:
 ```bash
-export SIMPLERPC_TOKEN='<TOKEN_FROM_SERVER>'
+export SIMPLERPYC_TOKEN='<TOKEN_FROM_SERVER>'
 ```
 
 ## Design Decisions
@@ -271,7 +271,7 @@ Unlike RPyC, we use WebSocket transport and msgpack serialization for better num
 ## Architecture
 
 ```
-simplerpc/
+simplerpyc/
 ├── client/
 │   ├── connection.py    # WebSocket connection management
 │   ├── proxy.py         # Minimal RPCProxy implementation

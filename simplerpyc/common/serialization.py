@@ -16,7 +16,7 @@ m.patch()
 def _convert_proxies(obj):
     """Convert RPCProxy objects and slices to serializable references."""
     # Avoid circular import
-    from simplerpc.client.proxy import RPCProxy
+    from simplerpyc.client.proxy import RPCProxy
 
     if isinstance(obj, RPCProxy):
         return {"__rpc_proxy__": True, "obj_id": obj._rpc_obj_id}
@@ -58,7 +58,7 @@ def serialize_exception(exc: Exception) -> dict:
 
 def deserialize_exception(exc_data: dict) -> tuple[Exception, Exception | None]:
     """Deserialize exception. Returns (RemoteException, original_exception)."""
-    from simplerpc.client.proxy import RemoteException
+    from simplerpyc.client.proxy import RemoteException
 
     exc_type = exc_data.get("exception_type", "Exception")
     exc_message = exc_data.get("exception_message", "Unknown error")
