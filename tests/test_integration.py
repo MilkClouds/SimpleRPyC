@@ -141,6 +141,17 @@ class TestComplexScenarios:
         assert materialize(conn.modules.math.sqrt(25)) == 5.0
         assert isinstance(materialize(conn.modules.os.sep), str)
 
+    def test_bracket_notation_simple(self, conn):
+        """Test bracket notation for simple modules."""
+        remote_cos = conn.modules["math"].cos
+        assert materialize(remote_cos(0)) == 1.0
+
+    def test_bracket_notation_nested(self, conn):
+        """Test bracket notation for nested modules like os.path."""
+        remote_join = conn.modules["os.path"].join
+        result = materialize(remote_join("a", "b", "c"))
+        assert result == "a/b/c" or result == "a\\b\\c"  # Unix or Windows
+
     def test_patch_module(self, conn):
         """Test patch_module."""
         conn.patch_module("math")
