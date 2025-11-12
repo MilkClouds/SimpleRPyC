@@ -142,6 +142,48 @@ class TestConnectFunction:
                 conn = connect()
                 assert conn.ws is mock_websocket
 
+    def test_connect_with_env_vars(self, mock_websocket):
+        """Test connect with environment variables."""
+
+        async def mock_connect(url, *_args, **_kwargs):
+            # Verify the URL contains the correct host and port from env vars
+            assert "testhost" in url
+            assert "9999" in url
+            return mock_websocket
+
+        with patch("websockets.connect", side_effect=mock_connect):
+            with patch.dict(
+                os.environ,
+                {
+                    "SIMPLERPYC_HOST": "testhost",
+                    "SIMPLERPYC_PORT": "9999",
+                    "SIMPLERPYC_TOKEN": "test_token",
+                },
+            ):
+                conn = connect()
+                assert conn.ws is mock_websocket
+
+    def test_connect_explicit_overrides_env(self, mock_websocket):
+        """Test that explicit parameters override environment variables."""
+
+        async def mock_connect(url, *_args, **_kwargs):
+            # Verify the URL contains the explicit values, not env vars
+            assert "explicit_host" in url
+            assert "7777" in url
+            return mock_websocket
+
+        with patch("websockets.connect", side_effect=mock_connect):
+            with patch.dict(
+                os.environ,
+                {
+                    "SIMPLERPYC_HOST": "env_host",
+                    "SIMPLERPYC_PORT": "9999",
+                    "SIMPLERPYC_TOKEN": "env_token",
+                },
+            ):
+                conn = connect("explicit_host", 7777, token="explicit_token")
+                assert conn.ws is mock_websocket
+
 
 class TestConnectionIntegration:
     """Integration tests."""

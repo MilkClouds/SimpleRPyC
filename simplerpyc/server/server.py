@@ -94,7 +94,9 @@ class RPCServer:
         print()
         print(f"Starting RPC server on {self.host}:{self.port}")
         print(f"Token: {self.token}")
-        print("\nSet environment variable:")
+        print("\nSet environment variables:")
+        print(f"  export SIMPLERPYC_HOST='{self.host}'")
+        print(f"  export SIMPLERPYC_PORT='{self.port}'")
         print(f"  export SIMPLERPYC_TOKEN='{self.token}'")
         print("\nOr connect with:")
         print(f"  simplerpyc.connect('{self.host}', {self.port}, token='{self.token}')")
@@ -109,10 +111,13 @@ class RPCServer:
 def main():
     """Entry point for python -m simplerpyc.server."""
     import argparse
+    import os
 
     parser = argparse.ArgumentParser(description="SimpleRPyC Server")
-    parser.add_argument("--host", default="localhost", help="Host to bind to")
-    parser.add_argument("--port", type=int, default=-1, help="Port to bind to (-1 for auto)")
+    parser.add_argument("--host", default=os.environ.get("SIMPLERPYC_HOST", "localhost"), help="Host to bind to")
+    parser.add_argument(
+        "--port", type=int, default=int(os.environ.get("SIMPLERPYC_PORT", "-1")), help="Port to bind to (-1 for auto)"
+    )
 
     args = parser.parse_args()
 
