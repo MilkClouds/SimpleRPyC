@@ -302,6 +302,7 @@ class TestServerErrors:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            encoding="utf-8",
         )
 
         # Wait for the server to start by reading its output
