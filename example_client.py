@@ -1,21 +1,21 @@
-"""Example client demonstrating simplerpc usage."""
+"""Example client demonstrating simplerpyc usage."""
 
 import atexit
 
-import simplerpc
-from simplerpc import materialize
+import simplerpyc
+from simplerpyc import materialize
 
 # ============================================================================
 # Setup: Connect to server and patch modules
 # ============================================================================
 
-# Connect to server (token auto-detected from SIMPLERPC_TOKEN env var)
-conn = simplerpc.connect("localhost", 8000)
+# Connect to server (token auto-detected from SIMPLERPYC_TOKEN env var)
+conn = simplerpyc.connect("localhost", 8000)
 atexit.register(conn.disconnect)
 
 # Patch modules - client doesn't need them installed locally
-simplerpc.patch_module(conn, "os")
-simplerpc.patch_module(conn, "numpy")
+simplerpyc.patch_module(conn, "os")
+simplerpyc.patch_module(conn, "numpy")
 
 # Import patched modules as if they were local
 import os as remote_os  # noqa: E402
@@ -28,11 +28,11 @@ import numpy as remote_np  # noqa: E402
 
 # Everything returns a proxy by default (lazy evaluation)
 cwd_proxy = remote_os.getcwd()
-print(f"{simplerpc.is_proxy(cwd_proxy)=}")
+print(f"{simplerpyc.is_proxy(cwd_proxy)=}")
 
 # Materialize to get actual value
 cwd = materialize(cwd_proxy)
-print(f"{simplerpc.is_proxy(cwd)=}")
+print(f"{simplerpyc.is_proxy(cwd)=}")
 print(f"{cwd=}")
 
 

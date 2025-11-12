@@ -1,4 +1,4 @@
-"""Tests for simplerpc.client.patcher module (deprecated)."""
+"""Tests for simplerpyc.client.patcher module (deprecated)."""
 
 import sys
 from unittest.mock import MagicMock
@@ -9,7 +9,7 @@ class TestPatchModule:
 
     def test_patch_module(self, mock_connection):
         """Test that patch_module delegates to conn.patch_module."""
-        from simplerpc.client.patcher import patch_module
+        from simplerpyc.client.patcher import patch_module
 
         mock_connection.patch_module = MagicMock(return_value="proxy")
         result = patch_module(mock_connection, "test_module")
@@ -19,7 +19,7 @@ class TestPatchModule:
 
     def test_unpatch_module(self):
         """Test unpatch_module removes module from sys.modules."""
-        from simplerpc.client.patcher import unpatch_module
+        from simplerpyc.client.patcher import unpatch_module
 
         sys.modules["test_module"] = MagicMock()
         unpatch_module("test_module")

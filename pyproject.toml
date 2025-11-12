@@ -1,7 +1,7 @@
 [project]
-name = "simplerpc"
+name = "simplerpyc"
 dynamic = ["version"]
-description = "Simple RPC client/server with websocket"
+description = "Simple Remote Python Call - WebSocket-based RPC with transparent proxies"
 readme = "README.md"
 authors = [
     { name = "Suhwan Choi", email = "milkclouds00@gmail.com" }
@@ -51,4 +51,4 @@ build-backend = "hatchling.build"
 source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
-version-file = "simplerpc/_version.py"
+version-file = "simplerpyc/_version.py"

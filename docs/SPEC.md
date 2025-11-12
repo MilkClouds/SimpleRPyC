@@ -21,17 +21,17 @@ m.patch()
 - on client, for every time "patched remote module" must be called, request command to server. on server, execute commands from client directly with `exec`. manages `globals()` per client.
 
 server side:
-`python -m simplerpc.serve`
+`python -m simplerpyc.server`
 
 client side:
 ```diff
-+ import simplerpc, atexit
++ import simplerpyc, atexit
 + # token can be given as environmental variable or passed directly
-+ simplerpc.connect("localhost", 8000, token="<TOKEN_FROM_SERVER>")
++ simplerpyc.connect("localhost", 8000, token="<TOKEN_FROM_SERVER>")
 + # client does not have simpler_env installed, but it can access it via RPC
-+ patcher = simplerpc.patch_module("simpler_env")
++ patcher = simplerpyc.patch_module("simpler_env")
 + # now simpler_env provides magic proxy
-+ atexit.register(simplerpc.disconnect)
++ atexit.register(simplerpyc.disconnect)
 
   import simpler_env
   from simpler_env.utils.env.observation_utils import get_image_from_maniskill2_obs_dict
@@ -75,8 +75,8 @@ mock/patch design:
 - Simple, predictable, and gives full control to user
 
 ```python
-import simplerpc
-from simplerpc import materialize
+import simplerpyc
+from simplerpyc import materialize
 
 # Everything is proxy by default
 env = simpler_env.make('...')  # RPCProxy

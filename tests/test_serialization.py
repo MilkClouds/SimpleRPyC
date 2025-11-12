@@ -1,8 +1,8 @@
-"""Tests for simplerpc.common.serialization module."""
+"""Tests for simplerpyc.common.serialization module."""
 
 import numpy as np
 
-from simplerpc.common.serialization import deserialize, deserialize_exception, serialize, serialize_exception
+from simplerpyc.common.serialization import deserialize, deserialize_exception, serialize, serialize_exception
 
 
 class TestSerialization:
@@ -147,7 +147,7 @@ class TestExceptionSerialization:
 
     def test_builtin_exception_round_trip(self):
         """Test builtin exceptions preserve type."""
-        from simplerpc.client.proxy import RemoteException
+        from simplerpyc.client.proxy import RemoteException
 
         for exc_type in [ValueError, TypeError, KeyError, IndexError]:
             exc = exc_type("test")
@@ -160,7 +160,7 @@ class TestExceptionSerialization:
 
     def test_exception_with_attributes(self):
         """Test exception attributes preserved."""
-        from simplerpc.client.proxy import RemoteException
+        from simplerpyc.client.proxy import RemoteException
 
         exc = ValueError("test")
         exc.custom = "value"  # type: ignore

@@ -7,10 +7,10 @@ import time
 import numpy as np
 import pytest
 
-from simplerpc.client.connection import connect
-from simplerpc.client.proxy import materialize
-from simplerpc.common.serialization import deserialize, serialize
-from simplerpc.server.server import RPCServer
+from simplerpyc.client.connection import connect
+from simplerpyc.client.proxy import materialize
+from simplerpyc.common.serialization import deserialize, serialize
+from simplerpyc.server.server import RPCServer
 
 
 class TestNumpySerialization:

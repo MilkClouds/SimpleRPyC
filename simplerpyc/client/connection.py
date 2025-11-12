@@ -6,7 +6,7 @@ import sys
 
 import websockets
 
-from simplerpc.common.serialization import deserialize, serialize
+from simplerpyc.common.serialization import deserialize, serialize
 
 
 class _ModulesNamespace:
@@ -17,7 +17,7 @@ class _ModulesNamespace:
 
     def __getattr__(self, name: str):
         """Get remote module by attribute access."""
-        from simplerpc.client.proxy import RPCProxy, _raise_deserialized_error
+        from simplerpyc.client.proxy import RPCProxy, _raise_deserialized_error
 
         response = self._conn.send({"type": "import_module", "module": name})
         if response["type"] == "error":
@@ -37,7 +37,7 @@ class _BuiltinsNamespace:
 
     def __getattr__(self, name: str):
         """Get remote builtin by attribute access."""
-        from simplerpc.client.proxy import RPCProxy, _raise_deserialized_error
+        from simplerpyc.client.proxy import RPCProxy, _raise_deserialized_error
 
         response = self._conn.send({"type": "get_builtin", "name": name})
         if response["type"] == "error":
@@ -58,9 +58,9 @@ class Connection:
     def connect(self, host: str, port: int, token: str | None = None):
         """Connect to RPC server."""
         if token is None:
-            token = os.environ.get("SIMPLERPC_TOKEN")
+            token = os.environ.get("SIMPLERPYC_TOKEN")
             if not token:
-                raise ValueError("Token must be provided or set in SIMPLERPC_TOKEN env var")
+                raise ValueError("Token must be provided or set in SIMPLERPYC_TOKEN env var")
 
         try:
             self.loop = asyncio.get_event_loop()
@@ -76,7 +76,7 @@ class Connection:
     @property
     def namespace(self) -> dict:
         """Get remote namespace (globals)."""
-        from simplerpc.client.proxy import _raise_deserialized_error
+        from simplerpyc.client.proxy import _raise_deserialized_error
 
         response = self.send({"type": "get_namespace"})
         if response["type"] == "error":
@@ -85,7 +85,7 @@ class Connection:
 
     def eval(self, expr: str):
         """Evaluate expression on remote."""
-        from simplerpc.client.proxy import RPCProxy, _raise_deserialized_error
+        from simplerpyc.client.proxy import RPCProxy, _raise_deserialized_error
 
         response = self.send({"type": "eval", "expr": expr})
         if response["type"] == "error":
@@ -94,7 +94,7 @@ class Connection:
 
     def execute(self, code: str):
         """Execute code on remote."""
-        from simplerpc.client.proxy import _raise_deserialized_error
+        from simplerpyc.client.proxy import _raise_deserialized_error
 
         response = self.send({"type": "execute", "code": code})
         if response["type"] == "error":
@@ -104,7 +104,7 @@ class Connection:
         """Send function to remote and return proxy."""
         import dill
 
-        from simplerpc.client.proxy import RPCProxy, _raise_deserialized_error
+        from simplerpyc.client.proxy import RPCProxy, _raise_deserialized_error
 
         func_bytes = dill.dumps(func)
         response = self.send({"type": "teleport", "func_bytes": func_bytes, "name": func.__name__})
@@ -118,7 +118,7 @@ class Connection:
         This method is idempotent - calling it multiple times for the same module
         will not send additional RPC requests.
         """
-        from simplerpc.client.proxy import RPCProxy, _raise_deserialized_error
+        from simplerpyc.client.proxy import RPCProxy, _raise_deserialized_error
 
         # Return existing proxy if already patched
         if module_name in self._patched_modules:

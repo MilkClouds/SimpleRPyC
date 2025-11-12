@@ -32,7 +32,7 @@ class ClientExecutor:
                 return handler()
             return {"type": "error", "error": f"Unknown message type: {msg['type']}"}
         except Exception as e:
-            from simplerpc.common.serialization import serialize_exception
+            from simplerpyc.common.serialization import serialize_exception
 
             return {"type": "error", **serialize_exception(e)}
 
@@ -72,7 +72,7 @@ class ClientExecutor:
 
     def _materialize(self, obj_id: int) -> dict:
         """Serialize object and return actual value."""
-        from simplerpc.common.serialization import serialize
+        from simplerpyc.common.serialization import serialize
 
         obj = self.objects[obj_id]
         serialize(obj)  # Test serialization
@@ -81,7 +81,7 @@ class ClientExecutor:
     def _resolve_proxies(self, obj: Any) -> Any:
         """Resolve proxy references and slices to actual objects."""
         # Import here to avoid circular dependency
-        from simplerpc.client.proxy import RPCProxy
+        from simplerpyc.client.proxy import RPCProxy
 
         if isinstance(obj, dict):
             if obj.get("__rpc_proxy__"):
