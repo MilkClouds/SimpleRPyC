@@ -1,5 +1,6 @@
 """Client execution context."""
 
+import sys
 from typing import Any
 
 
@@ -39,7 +40,9 @@ class ClientExecutor:
     def _import_module(self, module_name: str) -> dict:
         """Import module and return object ID."""
         exec(f"import {module_name}", self.globals)
-        module = self.globals[module_name.split(".")[0]]
+        # For nested modules like 'os.path', get from sys.modules instead of globals
+        # globals only contains the root module (e.g., 'os'), but sys.modules has the full path
+        module = sys.modules[module_name]
         return {"type": "success", "obj_id": self._store_object(module)}
 
     def _getattr(self, path: str, obj_id: int | None, attr: str) -> dict:

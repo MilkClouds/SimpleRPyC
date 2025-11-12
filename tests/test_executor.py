@@ -62,7 +62,8 @@ class TestImportModule:
         response = executor._import_module("os.path")
 
         assert response["type"] == "success"
-        assert executor.objects[response["obj_id"]].__name__ == "os"
+        # Should return the actual submodule, not the root module
+        assert executor.objects[response["obj_id"]].__name__ in ("posixpath", "ntpath")
 
 
 class TestGetattr:
