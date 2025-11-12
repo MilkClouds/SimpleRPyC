@@ -1,5 +1,7 @@
 """Tests for simplerpyc.common.serialization module."""
 
+from unittest.mock import patch
+
 import numpy as np
 
 from simplerpyc.common.serialization import deserialize, deserialize_exception, serialize, serialize_exception
@@ -117,3 +119,32 @@ class TestExceptionSerialization:
         assert isinstance(remote_exc, RemoteException)
         assert isinstance(original_exc, ValueError)
         assert original_exc.custom == "value"  # type: ignore
+
+    def test_exception_serialization_failure(self):
+        """Test exception serialization failure fallback."""
+
+        class UnserializableException(Exception):
+            def __reduce__(self):
+                raise TypeError("Cannot serialize")
+
+        exc = UnserializableException("test")
+
+        with patch("dill.dumps", side_effect=TypeError("Cannot serialize")):
+            data = serialize_exception(exc)
+            assert data["exception_pickle"] is None
+            assert "UnserializableException" in data["exception_type"]
+
+    def test_exception_deserialization_failure(self):
+        """Test exception deserialization failure fallback."""
+        from simplerpyc.client.proxy import RemoteException
+
+        exc = ValueError("test")
+        data = serialize_exception(exc)
+
+        # Corrupt the pickle data
+        data["exception_pickle"] = b"corrupted"
+
+        with patch("dill.loads", side_effect=Exception("Cannot deserialize")):
+            remote_exc, original_exc = deserialize_exception(data)
+            assert isinstance(remote_exc, RemoteException)
+            assert original_exc is None

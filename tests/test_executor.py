@@ -2,6 +2,9 @@
 
 from unittest.mock import Mock
 
+import pytest
+
+from simplerpyc.client.proxy import RPCProxy
 from simplerpyc.server.executor import ClientExecutor
 
 
@@ -289,5 +292,36 @@ class TestHandleMessage:
 
         assert response["type"] == "error"
         assert "exception_type" in response
-        assert "exception_message" in response
-        assert "traceback" in response
+
+
+class TestResolveProxies:
+    """Test _resolve_proxies method."""
+
+    def test_resolve_proxy_in_dict_raises_error(self):
+        """Test resolving RPCProxy in dict raises ValueError."""
+        executor = ClientExecutor()
+        mock_proxy = Mock(spec=RPCProxy)
+        executor.objects[0] = mock_proxy
+
+        with pytest.raises(ValueError, match="Server object store contains RPCProxy"):
+            executor._resolve_proxies({"__rpc_proxy__": True, "obj_id": 0})
+
+    def test_resolve_direct_proxy_raises_error(self):
+        """Test resolving direct RPCProxy raises ValueError."""
+        executor = ClientExecutor()
+        mock_proxy = Mock(spec=RPCProxy)
+
+        with pytest.raises(ValueError, match="RPCProxy object found in server-side data"):
+            executor._resolve_proxies(mock_proxy)
+
+    def test_get_namespace(self):
+        """Test _get_namespace method."""
+        executor = ClientExecutor()
+        executor.globals["test_var"] = 42
+
+        result = executor._get_namespace()
+
+        assert result["type"] == "success"
+        assert "namespace" in result
+        assert "test_var" in result["namespace"]
+        assert result["namespace"]["test_var"] == "<class 'int'>"

@@ -128,6 +128,20 @@ class TestRemoteException:
         assert exc.remote_traceback is None
         assert str(exc) == "Error message"
 
+    def test_repr_with_exception_type(self):
+        """Test repr with exception type."""
+        exc = RemoteException("Error message", exception_type="ValueError")
+
+        assert "ValueError" in repr(exc)
+        assert "Error message" in repr(exc)
+
+    def test_repr_without_exception_type(self):
+        """Test repr without exception type."""
+        exc = RemoteException("Error message")
+
+        assert "RemoteException" in repr(exc)
+        assert "Error message" in repr(exc)
+
 
 class TestMaterialize:
     """Test materialize function."""
