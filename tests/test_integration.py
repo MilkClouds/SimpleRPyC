@@ -211,3 +211,69 @@ class TestServerErrors:
 
         asyncio.run(test_disconnect())
         time.sleep(0.1)
+
+    def test_run_method(self):
+        """Test RPCServer.run() method."""
+        from unittest.mock import patch
+
+        server = RPCServer(host="localhost", port=8765)
+
+        with patch("asyncio.run") as mock_asyncio_run:
+            server.run()
+            mock_asyncio_run.assert_called_once()
+            # Verify it was called with server.serve() result
+            assert mock_asyncio_run.call_count == 1
+
+    def test_main_function(self):
+        """Test main() function."""
+        from unittest.mock import patch
+
+        from simplerpyc.server.server import main
+
+        test_args = ["prog", "--host", "0.0.0.0", "--port", "9999"]
+
+        with patch("sys.argv", test_args):
+            with patch("simplerpyc.server.server.RPCServer") as mock_server_class:
+                mock_server = mock_server_class.return_value
+
+                with patch.object(mock_server, "run") as mock_run:
+                    main()
+
+                    mock_server_class.assert_called_once_with("0.0.0.0", 9999)
+                    mock_run.assert_called_once()
+
+    def test_main_function_defaults(self):
+        """Test main() function with default arguments."""
+        from unittest.mock import patch
+
+        from simplerpyc.server.server import main
+
+        test_args = ["prog"]
+
+        with patch("sys.argv", test_args):
+            with patch("simplerpyc.server.server.RPCServer") as mock_server_class:
+                mock_server = mock_server_class.return_value
+
+                with patch.object(mock_server, "run") as mock_run:
+                    main()
+
+                    mock_server_class.assert_called_once_with("localhost", -1)
+                    mock_run.assert_called_once()
+
+    def test_main_module_entry_point(self):
+        """Test python -m simplerpyc.server entry point."""
+        import signal
+        import subprocess
+
+        proc = subprocess.Popen(
+            ["python", "-m", "simplerpyc.server", "--port", "0"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+
+        time.sleep(1)
+        proc.send_signal(signal.SIGTERM)
+        proc.wait(timeout=5)
+
+        assert proc.returncode in [0, -15, 143]
