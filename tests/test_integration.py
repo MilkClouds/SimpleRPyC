@@ -292,6 +292,7 @@ class TestServerErrors:
 
     def test_main_module_entry_point(self):
         """Test python -m simplerpyc.server entry point."""
+        import platform
         import signal
         import subprocess
         import sys
@@ -307,4 +308,9 @@ class TestServerErrors:
         proc.send_signal(signal.SIGTERM)
         proc.wait(timeout=5)
 
-        assert proc.returncode in [0, -15, 143]
+        # On Windows, SIGTERM results in return code 1 (TerminateProcess)
+        # On Unix, SIGTERM results in -15 or 143 (128 + 15)
+        if platform.system() == "Windows":
+            assert proc.returncode == 1
+        else:
+            assert proc.returncode in [0, -15, 143]
