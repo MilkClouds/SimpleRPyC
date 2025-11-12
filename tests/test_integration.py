@@ -200,17 +200,36 @@ class TestServerErrors:
             with pytest.raises(RuntimeError, match="Failed to bind to localhost:8888"):
                 asyncio.run(server.serve())
 
-    def test_connection_closed(self, server):
+    def test_connection_closed(self):
         """Test connection closed handling."""
+        from unittest.mock import MagicMock
+
         import websockets
 
-        async def test_disconnect():
-            uri = f"ws://localhost:{server.port}?token={server.token}"
-            async with websockets.connect(uri) as ws:
-                await ws.close()
+        server = RPCServer(host="localhost", port=8765)
 
-        asyncio.run(test_disconnect())
-        time.sleep(0.1)
+        async def test_handler():
+            # Create a custom mock websocket
+            class MockWebSocket:
+                def __init__(self):
+                    self.remote_address = ("127.0.0.1", 12345)
+                    self.request = MagicMock()
+                    self.request.path = f"/?token={server.token}"
+
+                def __aiter__(self):
+                    return self
+
+                async def __anext__(self):
+                    raise websockets.ConnectionClosed(None, None)
+
+            mock_ws = MockWebSocket()
+
+            await server.handler(mock_ws)
+
+            # Verify cleanup happened
+            assert mock_ws not in server.executors
+
+        asyncio.run(test_handler())
 
     def test_run_method(self):
         """Test RPCServer.run() method."""
