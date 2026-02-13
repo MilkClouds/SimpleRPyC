@@ -65,7 +65,7 @@ class RPCServer:
     async def serve(self):
         """Start server."""
         try:
-            self.server = await websockets.serve(self.handler, self.host, self.port)
+            self.server = await websockets.serve(self.handler, self.host, self.port, max_size=None)
             # Get the actual assigned port from the server socket (important when port=0)
             self.port = next(iter(self.server.sockets)).getsockname()[1]
         except OSError as e:

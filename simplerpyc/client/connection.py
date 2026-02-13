@@ -49,7 +49,7 @@ class Connection:
     """Manages WebSocket connection to RPC server."""
 
     def __init__(self):
-        self.ws = None
+        self.ws: websockets.ClientConnection = None
         self.loop = None
         self.modules = _ModulesNamespace(self)
         self.builtins = _BuiltinsNamespace(self)
@@ -70,7 +70,7 @@ class Connection:
             asyncio.set_event_loop(self.loop)
 
         async def _connect():
-            self.ws = await websockets.connect(f"ws://{host}:{port}?token={token}")
+            self.ws = await websockets.connect(f"ws://{host}:{port}?token={token}", max_size=None)
 
         self.loop.run_until_complete(_connect())
 
